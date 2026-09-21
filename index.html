@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Controle de Jalecos</title>
+<meta name="description" content="Empréstimo, devolução e consulta de jalecos">
+<meta name="theme-color" content="#2A4E50">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jalecos">
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4EF; --card:#FFFFFF; --ink:#22303B; --ink-soft:#5B6B76;
+    --line:#DCD5C6; --accent:#3E6D6F; --accent-deep:#2A4E50; --accent-tint:#E4EEEE;
+    --amber:#C68A2E; --amber-tint:#F7EBD8; --rust:#A6432F; --rust-tint:#F5E1DC;
+    --ok:#4C7A52; --ok-tint:#E4EEE4; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.45;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  h1,h2,h3{font-family:'Fraunces',serif;}
+  #app{max-width:640px;margin:0 auto;
+    padding:calc(20px + env(safe-area-inset-top)) 16px calc(60px + env(safe-area-inset-bottom));}
+  html{-webkit-tap-highlight-color:transparent;}
+  body{overscroll-behavior-y:contain;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;}
+  .topbar h1{font-size:1.35rem;font-weight:600;margin:0;}
+  .area-label{font-size:0.72rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .voltar{background:none;border:none;color:var(--ink-soft);font-size:0.85rem;padding:6px 0;
+    text-decoration:underline;text-underline-offset:3px;}
+
+  .home-intro{margin-bottom:26px;}
+  .home-intro h1{font-size:1.7rem;margin:0 0 6px;}
+  .home-intro p{color:var(--ink-soft);margin:0;font-size:0.95rem;max-width:46ch;}
+  .tags{display:flex;flex-direction:column;gap:14px;}
+  .tag-btn{position:relative;display:flex;align-items:center;gap:16px;background:var(--card);
+    border:1px solid var(--line);padding:18px 20px 18px 16px;text-align:left;width:100%;
+    clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%);}
+  .tag-btn:active{background:var(--accent-tint);}
+  .tag-hole{width:34px;height:34px;min-width:34px;border-radius:50%;background:var(--accent);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;font-weight:600;font-size:1.05rem;}
+  .tag-btn.balcao .tag-hole{background:var(--amber);}
+  .tag-btn.aluno .tag-hole{background:var(--ink-soft);}
+  .tag-title{font-family:'Fraunces',serif;font-size:1.12rem;font-weight:600;display:block;}
+  .tag-sub{color:var(--ink-soft);font-size:0.84rem;}
+
+  .pedir-box{margin-top:20px;background:var(--accent-tint);border:1px solid var(--accent);
+    border-radius:var(--radius);padding:16px;}
+  .pedir-box h3{margin:0 0 4px;font-size:1.02rem;color:var(--accent-deep);}
+  .pedir-box p{margin:0 0 12px;font-size:0.85rem;color:var(--ink-soft);}
+
+  .rules-note{margin-top:28px;border-top:1px dashed var(--line);padding-top:16px;
+    font-size:0.82rem;color:var(--ink-soft);}
+  .rules-note b{color:var(--ink);}
+
+  .pin-box{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-top:8px;}
+  .pin-box h2{margin:0 0 4px;font-size:1.15rem;}
+  .pin-box p{margin:0 0 16px;color:var(--ink-soft);font-size:0.88rem;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:0.78rem;color:var(--ink-soft);margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);
+    border-radius:8px;font-size:0.95rem;background:#fff;color:var(--ink);}
+  .field textarea{min-height:70px;resize:vertical;}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .field .hint{font-size:0.75rem;color:var(--ink-soft);margin-top:4px;}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);
+    color:#fff;border:none;border-radius:8px;padding:11px 18px;font-size:0.92rem;font-weight:600;width:100%;}
+  .btn:active{background:var(--accent-deep);}
+  .btn[disabled]{opacity:0.55;cursor:default;}
+  .btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
+  .btn.small{width:auto;padding:8px 12px;font-size:0.82rem;}
+  .btn.danger{background:var(--rust);}
+  .error-msg{color:var(--rust);font-size:0.85rem;margin-top:8px;}
+  .success-msg{background:var(--ok-tint);color:var(--ok);border-radius:8px;padding:12px 14px;
+    margin-bottom:14px;font-size:0.9rem;}
+  .alert-msg{background:var(--rust-tint);color:var(--rust);border-radius:8px;padding:12px 14px;
+    margin-bottom:14px;font-size:0.9rem;}
+
+  .banner{background:var(--amber-tint);border:1px solid var(--amber);border-radius:var(--radius);
+    padding:13px 14px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;
+    gap:10px;flex-wrap:wrap;}
+  .banner span{font-size:0.9rem;color:#5c4110;}
+  .banner b{font-family:'Fraunces',serif;}
+
+  .stats{display:flex;gap:10px;margin-bottom:18px;}
+  .stat-card{flex:1;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 10px;text-align:center;}
+  .stat-card .num{font-family:'Fraunces',serif;font-size:1.45rem;font-weight:600;display:block;}
+  .stat-card .lbl{font-size:0.68rem;color:var(--ink-soft);}
+  .stat-card.rust .num{color:var(--rust);}
+  .stat-card.accent .num{color:var(--accent-deep);}
+
+  .search-row{display:flex;gap:8px;margin-bottom:14px;}
+  .search-row input{flex:1;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;}
+
+  .section-title{font-size:0.78rem;color:var(--ink-soft);margin:22px 0 8px;
+    font-family:'IBM Plex Mono',monospace;}
+  .ticket{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+    margin-bottom:10px;border-left:4px solid var(--ink-soft);}
+  .ticket.s-ok{border-left-color:var(--ok);}
+  .ticket.s-hoje{border-left-color:var(--amber);}
+  .ticket.s-atrasado{border-left-color:var(--rust);}
+  .ticket.s-prateleira{border-left-color:var(--ok);}
+  .ticket.s-emprestado{border-left-color:var(--amber);}
+  .ticket.s-fora{border-left-color:var(--ink-soft);opacity:0.75;}
+  .ticket-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .ticket-name{font-weight:600;font-size:0.98rem;}
+  .ticket-turma{color:var(--ink-soft);font-size:0.8rem;}
+  .ticket-meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:0.8rem;color:var(--ink-soft);}
+  .ticket-meta .mono{color:var(--ink);}
+  .chip{font-size:0.7rem;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;
+    font-family:'IBM Plex Mono',monospace;}
+  .chip.s-ok,.chip.s-prateleira{background:var(--ok-tint);color:var(--ok);}
+  .chip.s-hoje,.chip.s-emprestado{background:var(--amber-tint);color:#7a5710;}
+  .chip.s-atrasado{background:var(--rust-tint);color:var(--rust);}
+  .chip.s-fora{background:#EDEAE2;color:var(--ink-soft);}
+  .chip.paga{background:var(--ok-tint);color:var(--ok);}
+  .chip.pendente{background:var(--rust-tint);color:var(--rust);}
+  .empty-state{color:var(--ink-soft);font-size:0.88rem;padding:20px 4px;text-align:center;}
+  .loading{color:var(--ink-soft);font-size:0.88rem;padding:24px 0;text-align:center;}
+
+  details.hist summary{cursor:pointer;font-size:0.85rem;color:var(--accent-deep);padding:8px 0;}
+
+  .mode-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .mode-tabs button{flex:1 1 calc(50% - 4px);padding:10px 6px;border:1px solid var(--line);background:var(--card);
+    border-radius:8px;font-size:0.85rem;font-weight:600;color:var(--ink-soft);}
+  .mode-tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .mode-tabs.cinco button{flex:1 1 calc(33.333% - 6px);font-size:0.8rem;}
+
+  .operador-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--accent-tint);border:1px solid var(--accent);border-radius:8px;
+    padding:8px 12px;margin-bottom:16px;font-size:0.82rem;color:var(--accent-deep);}
+  .operador-bar b{font-family:'Fraunces',serif;font-size:0.92rem;}
+  .operador-bar button{background:none;border:none;color:var(--accent-deep);font-size:0.82rem;
+    text-decoration:underline;text-underline-offset:3px;padding:2px 0;}
+
+  .filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .filtros button{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);
+    border-radius:20px;padding:6px 12px;font-size:0.78rem;font-weight:600;}
+  .filtros button.active{background:var(--accent-deep);color:#fff;border-color:var(--accent-deep);}
+
+  .estoque-resumo{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;font-size:0.8rem;
+    color:var(--ink-soft);}
+  .estoque-resumo b{font-family:'Fraunces',serif;color:var(--ink);font-size:0.95rem;}
+  .estoque-resumo span{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:7px 11px;}
+
+  .jaleco-num{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:1.02rem;}
+  .acoes-linha{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;}
+
+  .result-item{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;margin-bottom:8px;cursor:pointer;}
+  .result-item:active{background:var(--accent-tint);}
+  .confirm-box{background:var(--card);border:1px solid var(--accent);border-radius:8px;padding:16px;margin-top:6px;}
+  .confirm-box.warn{border-color:var(--rust);}
+  .fine-line{font-size:1.05rem;margin:10px 0;font-family:'Fraunces',serif;}
+  .fine-line.zero{color:var(--ok);}
+  .fine-line.late{color:var(--rust);}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin:12px 0;font-size:0.88rem;}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(34,48,59,0.5);display:flex;
+    align-items:flex-end;justify-content:center;z-index:50;}
+  .modal{background:var(--card);width:100%;max-width:640px;border-radius:14px 14px 0 0;
+    padding:20px;max-height:80vh;overflow-y:auto;}
+  .modal h3{margin-top:0;}
+  .modal textarea{width:100%;min-height:180px;border:1px solid var(--line);border-radius:8px;
+    padding:10px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--ink);}
+  .modal-actions{display:flex;gap:8px;margin-top:12px;}
+  .copy-ok{color:var(--ok);font-size:0.85rem;margin-top:8px;}
+
+  /* ===== Acréscimos do app (v3) ===== */
+  .offline-bar{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;font-size:0.8rem;
+    text-align:center;padding:calc(7px + env(safe-area-inset-top)) 12px 7px;margin:0 -16px 14px;}
+  .instalar-box{margin-top:20px;border:1px dashed var(--accent);border-radius:var(--radius);padding:14px 16px;
+    font-size:0.85rem;color:var(--ink-soft);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+  .instalar-box b{color:var(--accent-deep);}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px;}
+  .seg button{flex:1;border:none;background:var(--card);padding:9px 6px;font-size:0.84rem;font-weight:600;color:var(--ink-soft);}
+  .seg button.active{background:var(--accent);color:#fff;}
+  .ra-row{display:flex;gap:8px;}
+  .ra-row input{flex:1;}
+  .ra-status{font-size:0.82rem;border-radius:8px;padding:9px 12px;margin:-4px 0 14px;}
+  .ra-status.ok{background:var(--ok-tint);color:var(--ok);}
+  .ra-status.novo{background:var(--accent-tint);color:var(--accent-deep);}
+  .ra-status.warn{background:var(--rust-tint);color:var(--rust);}
+  .ra-status.info{color:var(--ink-soft);}
+  .topbar-acoes{display:flex;gap:14px;align-items:center;}
+  .versao{margin-top:26px;text-align:center;font-size:0.7rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .config-box{background:var(--card);border:1px solid var(--rust);border-radius:var(--radius);padding:20px;}
+  .config-box code{background:var(--paper);padding:1px 5px;border-radius:4px;font-size:0.85em;}
+
+  @media (min-width:600px){
+    .tags{flex-direction:row;}
+    .tag-btn{flex:1;flex-direction:column;align-items:flex-start;clip-path:none;border-radius:var(--radius);}
+    .tag-hole{margin-bottom:8px;}
+  }
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">Carregando…</div></div>
+
+<script>
+/* ===== Estado ===== */
+var S = {
+  tela: 'home',
+  alvoPin: null,
+  pin: null,
+  regras: { diasUteis: 3, multaPorDia: 5, nomeOrgao: 'Controle de Jalecos', solicitacaoAtiva: true },
+  painel: null,
+  carregando: false,
+  erro: null,
+  msg: null,
+  pinErro: null,
+  modoBalcao: 'emprestar',
+  buscaGestao: '',
+  buscaDevolver: '',
+  selecionadoId: null,
+  multaPagaCheck: false,
+  enviando: false,
+  buscaAluno: '',
+  resultadoAluno: undefined,
+  pendenciaAluno: null,
+  modalTexto: null,
+  copiado: false,
+  abaGestao: 'ativos',
+  formBloqueio: false,
+  bloqueioErro: null,
+  avisoBloqueio: null,
+  dadosPendentes: null,
+  // histórico
+  confirmarLimpeza: false,
+  // estoque
+  buscaEstoque: '',
+  filtroEstoque: 'todos',
+  formJaleco: null,        // null | 'novo' | 'lote'
+  editandoJaleco: null,
+  jalecoErro: null,
+  confirmarExclusao: null,
+  // solicitação
+  solErro: null,
+  solEnviada: null,
+  // quem da gestão está operando
+  operador: '',
+  alvoOperador: null,
+  equipeLista: null,
+  operadorErro: null,
+  formMembro: false,
+  membroErro: null,
+  editandoMembro: null,
+  // v3 — app
+  online: navigator.onLine,
+  rascunho: {},            // o que já foi digitado no formulário de empréstimo
+  raInfo: null,            // resultado da busca pelo RA no balcão
+  raBuscando: false,
+  alunoTipo: 'ra',         // consulta do aluno: 'ra' | 'telefone'
+  lembrarPin: false,
+  promptInstalar: null     // evento beforeinstallprompt (Android/Chrome)
+};
+
+var VERSAO_APP = '3.0';
+
+/* ===== Armazenamento local (sempre protegido: pode falhar em aba anônima) ===== */
+function lerLocal(chave) { try { return localStorage.getItem(chave); } catch (e) { return null; } }
+function gravarLocal(chave, valor) {
+  try { if (valor === null || valor === undefined) localStorage.removeItem(chave); else localStorage.setItem(chave, valor); }
+  catch (e) {}
+}
+
+/* ===== Ponte com o backend (Apps Script publicado como App da Web) ===== */
+var API_URL = String((window.JALECOS_CONFIG && window.JALECOS_CONFIG.API_URL) || '').trim();
+
+/**
+ * Chama uma função do Codigo.gs. O corpo vai como text/plain para não disparar
+ * a checagem de CORS (o Apps Script não responde a ela).
+ */
+function api(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  if (!API_URL) return Promise.reject(new Error('O app ainda não foi configurado: falta a API_URL no arquivo config.js.'));
+  var ctrl = ('AbortController' in window) ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 45000);
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn: fn, args: args }),
+    redirect: 'follow',
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function (r) {
+    if (!r.ok) throw new Error('O servidor respondeu com erro (' + r.status + '). Tente de novo.');
+    return r.text();
+  }).then(function (txt) {
+    var j;
+    try { j = JSON.parse(txt); }
+    catch (e) {
+      throw new Error('Resposta inesperada do servidor. Confira se a implantação do Apps Script está ' +
+                      'com acesso "Qualquer pessoa" e se a API_URL termina em /exec.');
+    }
+    if (!j.ok) throw new Error(j.erro || 'Erro desconhecido no servidor.');
+    return j.data;
+  }).catch(function (e) {
+    if (e && e.name === 'AbortError') throw new Error('O servidor demorou demais para responder. Confira se o lançamento entrou antes de repetir.');
+    if (e instanceof TypeError) {
+      throw new Error(navigator.onLine ? 'Não foi possível falar com o servidor. Tente de novo.'
+                                       : 'Sem internet. Conecte-se e tente de novo.');
+    }
+    throw e;
+  }).then(function (v) { clearTimeout(timer); return v; },
+          function (e) { clearTimeout(timer); throw e; });
+}
+
+/* ===== Formatação ===== */
+function formatBR(iso) {
+  if (!iso) return '—';
+  var p = String(iso).split(' ')[0].split('-');
+  if (p.length < 3) return String(iso);
+  return p[2] + '/' + p[1] + '/' + p[0];
+}
+function formatDataHora(txt) {
+  if (!txt) return '—';
+  var partes = String(txt).split(' ');
+  return formatBR(partes[0]) + (partes[1] ? ' às ' + partes[1] : '');
+}
+function formatBRL(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
+function digitos(s) { return String(s || '').replace(/\D/g, ''); }
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function el(html) {
+  var t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+/* ===== Navegação ===== */
+function irHome() {
+  S.tela = 'home'; S.msg = null; S.erro = null; S.painel = null;
+  S.raInfo = null; S.avisoBloqueio = null;
+  S.solErro = null; S.solEnviada = null; render();
+}
+function irAreaEquipe(area) {
+  if (S.pin) { seguirParaArea(area); return; }
+  S.tela = 'pin'; S.alvoPin = area; S.pinErro = null; render();
+}
+/** Área restrita só abre depois que alguém da gestão se identifica. */
+function seguirParaArea(area) {
+  if (S.operador) { entrarArea(area); return; }
+  irOperador(area);
+}
+function entrarArea(area) {
+  S.tela = area; S.msg = null; S.erro = null;
+  carregarPainel();
+}
+function irOperador(area) {
+  S.tela = 'operador'; S.alvoOperador = area;
+  S.operadorErro = null; S.formMembro = false; S.membroErro = null;
+  S.equipeLista = null; S.carregando = true; render();
+  api('listarEquipe', S.pin).then(function (r) {
+    S.equipeLista = r; S.carregando = false; render();
+  }).catch(function (e) {
+    S.carregando = false; S.operadorErro = e.message; render();
+  });
+}
+function escolherOperador(nome) {
+  S.operador = nome;
+  entrarArea(S.alvoOperador || 'balcao');
+}
+function tentarPin(valor) {
+  S.pinErro = null; S.carregando = true; render();
+  api('verificarPin', valor).then(function (ok) {
+    S.carregando = false;
+    if (ok) {
+      S.pin = valor;
+      gravarLocal('jalecos_pin', S.lembrarPin ? valor : null);
+      seguirParaArea(S.alvoPin);
+    }
+    else { S.pinErro = 'PIN incorreto. Tente novamente.'; render(); }
+  }).catch(function (e) {
+    S.carregando = false; S.pinErro = e.message; render();
+  });
+}
+function irAluno() {
+  S.tela = 'aluno'; S.resultadoAluno = undefined; S.pendenciaAluno = null; S.erro = null;
+  S.alunoTipo = lerLocal('jalecos_aluno_tipo') || 'ra';
+  S.buscaAluno = lerLocal('jalecos_aluno_valor') || '';
+  render();
+}
+/** Sai da área restrita: esquece o PIN deste aparelho e quem estava operando. */
+function sairDaEquipe() {
+  S.pin = null; S.operador = ''; gravarLocal('jalecos_pin', null);
+  irHome();
+}
+function irSolicitar() {
+  S.tela = 'solicitar'; S.solErro = null; S.solEnviada = null; render();
+}
+
+/* ===== Carregar dados ===== */
+function carregarPainel() {
+  S.carregando = true; render();
+  api('carregarPainel', S.pin).then(function (dados) {
+    S.painel = dados;
+    S.regras = dados.regras;
+    S.carregando = false;
+    // Se quem estava operando foi desativado no meio do caminho, pede para escolher de novo.
+    var ativos = dados.equipeAtiva || [];
+    if (S.operador && ativos.indexOf(S.operador) === -1) {
+      S.operador = '';
+      if (ativos.length) { irOperador(S.tela); return; }
+    }
+    render();
+  }).catch(function (e) {
+    S.carregando = false; S.erro = e.message; render();
+  });
+}
+
+/* ===== Ações — empréstimo e devolução ===== */
+function enviarEmprestimo(form, liberarExcecao) {
+  var dados = {
+    ra: form.ra.value,
+    nome: form.nome.value, telefone: form.telefone.value, email: form.email.value,
+    turma: form.turma.value, jaleco: form.jaleco.value,
+    responsavel: form.responsavel.value,
+    liberarExcecao: !!liberarExcecao
+  };
+  if (dados.responsavel) S.operador = dados.responsavel;
+  S.enviando = true; S.erro = null; S.msg = null; S.avisoBloqueio = null; render();
+  api('registrarEmprestimo', S.pin, dados).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; S.dadosPendentes = null;
+    S.rascunho = {}; S.raInfo = null;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false;
+    var m = e.message || '';
+    if (m.indexOf('EMPRESTIMO_BLOQUEADO::') !== -1) {
+      S.avisoBloqueio = m.split('EMPRESTIMO_BLOQUEADO::')[1];
+      S.dadosPendentes = dados;
+    } else {
+      S.erro = m;
+    }
+    render();
+  });
+}
+
+function forcarEmprestimo() {
+  if (!S.dadosPendentes) return;
+  S.enviando = true; S.avisoBloqueio = null; render();
+  var d = S.dadosPendentes;
+  d.liberarExcecao = true;
+  api('registrarEmprestimo', S.pin, d).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem + ' (liberado como exceção)'; S.dadosPendentes = null;
+    S.rascunho = {}; S.raInfo = null;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.erro = e.message; render();
+  });
+}
+
+/** Balcão digitou o RA: busca o último cadastro e já avisa pendências. */
+function buscarRA(ra) {
+  var limpo = String(ra || '').replace(/[^0-9a-zA-Z]/g, '');
+  if (limpo.length < 3) { S.raInfo = null; render(); return; }
+  if (S.raInfo && S.raInfo.ra === limpo) return;
+  S.raBuscando = true; render();
+  api('dadosDoAluno', S.pin, ra).then(function (r) {
+    S.raBuscando = false;
+    r.ra = limpo;
+    S.raInfo = r;
+    if (r.encontrado) {
+      ['nome', 'telefone', 'email', 'turma'].forEach(function (c) {
+        if (!String(S.rascunho[c] || '').trim() && r[c]) S.rascunho[c] = r[c];
+      });
+    }
+    render();
+    var prox = document.querySelector(r.encontrado ? '#form-emp [name="jaleco"]' : '#form-emp [name="nome"]');
+    if (prox) prox.focus();
+  }).catch(function (e) {
+    S.raBuscando = false; S.raInfo = { ra: limpo, erro: e.message }; render();
+  });
+}
+
+function confirmarDevolucao(quem) {
+  if (quem) S.operador = quem;
+  S.enviando = true; S.erro = null; render();
+  api('registrarDevolucao', S.pin, S.selecionadoId, S.multaPagaCheck, quem || S.operador).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem;
+    S.selecionadoId = null; S.buscaDevolver = ''; S.multaPagaCheck = false;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.erro = e.message; render();
+  });
+}
+function alternarMulta(id) {
+  api('alternarMultaPaga', S.pin, id, S.operador).then(function (r) {
+    S.msg = r.mensagem; carregarPainel();
+  }).catch(function (e) { S.erro = e.message; render(); });
+}
+
+/* ===== Ações — bloqueios ===== */
+function salvarBloqueio(form) {
+  var dados = {
+    ra: form.b_ra.value,
+    nome: form.b_nome.value, telefone: form.b_telefone.value,
+    email: form.b_email.value, motivo: form.b_motivo.value
+  };
+  S.enviando = true; S.bloqueioErro = null; render();
+  api('adicionarBloqueio', S.pin, dados).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; S.formBloqueio = false;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.bloqueioErro = e.message; render();
+  });
+}
+function liberar(id) {
+  api('liberarBloqueio', S.pin, id).then(function (r) {
+    S.msg = r.mensagem; carregarPainel();
+  }).catch(function (e) { S.erro = e.message; render(); });
+}
+
+/* ===== Ações — histórico ===== */
+function limparHistorico() {
+  S.enviando = true; render();
+  api('limparHistoricoVisual', S.pin).then(function (r) {
+    S.enviando = false; S.confirmarLimpeza = false; S.msg = r.mensagem;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.confirmarLimpeza = false; S.erro = e.message; render();
+  });
+}
+function restaurarHistorico() {
+  S.enviando = true; render();
+  api('restaurarHistorico', S.pin).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.erro = e.message; render();
+  });
+}
+
+/* ===== Ações — estoque ===== */
+function salvarJaleco(form) {
+  var dados = {
+    numero: form.j_numero.value, tamanho: form.j_tamanho.value,
+    estado: form.j_estado.value, situacao: form.j_situacao.value,
+    observacao: form.j_obs.value
+  };
+  S.enviando = true; S.jalecoErro = null; render();
+  api('adicionarJaleco', S.pin, dados).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; S.formJaleco = null;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.jalecoErro = e.message; render();
+  });
+}
+function salvarLote(form) {
+  S.enviando = true; S.jalecoErro = null; render();
+  api('adicionarJalecosEmLote', S.pin, form.l_texto.value, form.l_tamanho.value).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; S.formJaleco = null;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.jalecoErro = e.message; render();
+  });
+}
+function salvarEdicaoJaleco(form, numeroOriginal) {
+  var dados = {
+    numero: form.e_numero.value, tamanho: form.e_tamanho.value,
+    estado: form.e_estado.value, situacao: form.e_situacao.value,
+    observacao: form.e_obs.value
+  };
+  S.enviando = true; S.jalecoErro = null; render();
+  api('atualizarJaleco', S.pin, numeroOriginal, dados).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; S.editandoJaleco = null;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.jalecoErro = e.message; render();
+  });
+}
+function excluirJaleco(numero) {
+  S.enviando = true; render();
+  api('excluirJaleco', S.pin, numero).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem;
+    S.confirmarExclusao = null; S.editandoJaleco = null;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.jalecoErro = e.message; S.confirmarExclusao = null; render();
+  });
+}
+
+/* ===== Ações — equipe ===== */
+function salvarMembro(form, entrarComoEle) {
+  var dados = { nome: form.m_nome.value, funcao: form.m_funcao.value };
+  S.enviando = true; S.membroErro = null; render();
+  api('adicionarMembro', S.pin, dados).then(function (r) {
+    S.enviando = false; S.formMembro = false;
+    if (entrarComoEle) { S.operador = r.nome; entrarArea(S.alvoOperador || 'gestao'); return; }
+    S.msg = r.mensagem; carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.membroErro = e.message; render();
+  });
+}
+function salvarEdicaoMembro(form, id) {
+  var dados = { nome: form.me_nome.value, funcao: form.me_funcao.value };
+  S.enviando = true; S.membroErro = null; render();
+  api('atualizarMembro', S.pin, id, dados).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; S.editandoMembro = null;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.membroErro = e.message; render();
+  });
+}
+function alternarMembro(id) {
+  S.enviando = true; render();
+  api('alternarMembroAtivo', S.pin, id).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.membroErro = e.message; render();
+  });
+}
+function removerMembro(id) {
+  S.enviando = true; render();
+  api('excluirMembro', S.pin, id).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem; S.editandoMembro = null; carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.membroErro = e.message; render();
+  });
+}
+
+/* ===== Ações — pedidos ===== */
+function mudarSolicitacao(id, status) {
+  S.enviando = true; render();
+  api('atualizarSolicitacao', S.pin, id, status).then(function (r) {
+    S.enviando = false; S.msg = r.mensagem;
+    carregarPainel();
+  }).catch(function (e) {
+    S.enviando = false; S.erro = e.message; render();
+  });
+}
+function enviarSolicitacao(form) {
+  var dados = {
+    ra: form.s_ra.value,
+    nome: form.s_nome.value, turma: form.s_turma.value,
+    contato: form.s_contato.value, observacao: form.s_obs.value
+  };
+  S.enviando = true; S.solErro = null; render();
+  api('registrarSolicitacao', dados).then(function (r) {
+    S.enviando = false; S.solEnviada = r.mensagem; render();
+  }).catch(function (e) {
+    S.enviando = false; S.solErro = e.message; render();
+  });
+}
+
+/* ===== Ações — aluno e avisos ===== */
+function buscarAluno(valor) {
+  S.carregando = true; S.erro = null; render();
+  gravarLocal('jalecos_aluno_tipo', S.alunoTipo);
+  gravarLocal('jalecos_aluno_valor', valor);
+  api('consultarAluno', S.alunoTipo, valor).then(function (r) {
+    S.resultadoAluno = r.emprestimos;
+    S.pendenciaAluno = r.pendencia;
+    S.carregando = false; render();
+  }).catch(function (e) {
+    S.carregando = false; S.erro = e.message;
+    S.resultadoAluno = undefined; S.pendenciaAluno = null; render();
+  });
+}
+function abrirAvisos() {
+  api('gerarTextoAvisos', S.pin).then(function (txt) {
+    S.modalTexto = txt; S.copiado = false; render();
+  }).catch(function (e) { S.erro = e.message; render(); });
+}
+function copiarAviso() {
+  var area = document.getElementById('aviso-texto');
+  function fallback() {
+    area.select();
+    try { document.execCommand('copy'); S.copiado = true; } catch (e) { S.copiado = false; }
+    render();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(area.value).then(function () { S.copiado = true; render(); }, fallback);
+  } else fallback();
+}
+/** No celular, abre direto a folha de compartilhar (WhatsApp etc.). */
+function compartilharAviso() {
+  if (navigator.share) navigator.share({ text: S.modalTexto }).catch(function () {});
+  else copiarAviso();
+}
+
+/* ===== Render ===== */
+function render() {
+  var app = document.getElementById('app');
+  var foco = document.activeElement && document.activeElement.name;
+  app.innerHTML = '';
+  if (!S.online) app.appendChild(el('<div class="offline-bar">Sem internet — o app precisa de conexão para consultar e registrar.</div>'));
+  if (!API_URL) { app.appendChild(telaSemConfig()); return; }
+  if (S.tela === 'home') app.appendChild(telaHome());
+  else if (S.tela === 'pin') app.appendChild(telaPin());
+  else if (S.tela === 'gestao') app.appendChild(telaGestao());
+  else if (S.tela === 'balcao') app.appendChild(telaBalcao());
+  else if (S.tela === 'aluno') app.appendChild(telaAluno());
+  else if (S.tela === 'solicitar') app.appendChild(telaSolicitar());
+  else if (S.tela === 'operador') app.appendChild(telaOperador());
+  if (S.modalTexto !== null && S.modalTexto !== undefined) app.appendChild(modalAvisos());
+  // Mantém o cursor no campo em que a pessoa estava digitando
+  if (foco) { var f = app.querySelector('[name="' + foco + '"]'); if (f && f.tagName !== 'SELECT') f.focus(); }
+}
+
+function telaSemConfig() {
+  return el(
+    '<div class="config-box"><h2 style="margin-top:0;">Falta configurar o app</h2>' +
+    '<p>Abra o arquivo <code>config.js</code> e cole em <code>API_URL</code> a URL do App da Web ' +
+    'do Apps Script (a que termina em <code>/exec</code>). Depois publique de novo.</p>' +
+    '<p style="color:var(--ink-soft);font-size:0.88rem;">O passo a passo está no GUIA-APP, seção "Ligar o app à planilha".</p></div>'
+  );
+}
+
+function ehIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function estaInstalado() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+}
+function blocoInstalar() {
+  if (estaInstalado()) return null;
+  if (S.promptInstalar) {
+    var b = el('<div class="instalar-box"><span><b>Instale o app</b> no celular: abre direto, em tela cheia.</span>' +
+               '<button class="btn small">Instalar</button></div>');
+    b.querySelector('button').onclick = function () {
+      var p = S.promptInstalar; S.promptInstalar = null;
+      p.prompt();
+      p.userChoice.then(function () { render(); }, function () { render(); });
+    };
+    return b;
+  }
+  if (ehIOS()) {
+    return el('<div class="instalar-box"><span><b>Instale no iPhone:</b> toque em ' +
+              '<b>Compartilhar</b> (quadrado com seta) e depois em <b>Adicionar à Tela de Início</b>.</span></div>');
+  }
+  return null;
+}
+
+function telaHome() {
+  var w = el(
+    '<div>' +
+      '<div class="home-intro"><h1>' + esc(S.regras.nomeOrgao) + '</h1>' +
+      '<p>Escolha o acesso conforme sua função.</p></div>' +
+      '<div class="tags">' +
+        '<button class="tag-btn" id="b-gestao"><span class="tag-hole">G</span>' +
+        '<span><span class="tag-title">Gestão</span><span class="tag-sub">Painel completo, estoque e multas</span></span></button>' +
+        '<button class="tag-btn balcao" id="b-balcao"><span class="tag-hole">B</span>' +
+        '<span><span class="tag-title">Balcão</span><span class="tag-sub">Registrar empréstimo ou devolução</span></span></button>' +
+        '<button class="tag-btn aluno" id="b-aluno"><span class="tag-hole">A</span>' +
+        '<span><span class="tag-title">Aluno</span><span class="tag-sub">Consultar meu empréstimo</span></span></button>' +
+      '</div>' +
+      (S.regras.solicitacaoAtiva
+        ? '<div class="pedir-box"><h3>Precisa de um jaleco?</h3>' +
+          '<p>Avise a gestão antes de ir até o balcão. Você deixa seu contato e a gente responde.</p>' +
+          '<button class="btn" id="b-pedir">Pedir um jaleco</button></div>'
+        : '') +
+      '<div class="rules-note">Prazo de <b>' + S.regras.diasUteis +
+      ' dias úteis</b>, contando o dia da retirada. Após o prazo, multa de <b>' +
+      formatBRL(S.regras.multaPorDia) + ' por dia útil</b>.</div>' +
+    '</div>'
+  );
+  var inst = blocoInstalar();
+  if (inst) w.insertBefore(inst, w.querySelector('.rules-note'));
+  w.appendChild(el('<div class="versao">versão ' + VERSAO_APP + (S.pin ? ' · PIN salvo neste aparelho' : '') + '</div>'));
+  w.querySelector('#b-gestao').onclick = function () { irAreaEquipe('gestao'); };
+  w.querySelector('#b-balcao').onclick = function () { irAreaEquipe('balcao'); };
+  w.querySelector('#b-aluno').onclick = irAluno;
+  if (S.regras.solicitacaoAtiva) w.querySelector('#b-pedir').onclick = irSolicitar;
+  return w;
+}
+
+function telaPin() {
+  var w = el(
+    '<div>' +
+      '<div class="topbar"><span class="area-label">ACESSO RESTRITO</span></div>' +
+      '<button class="voltar" id="voltar">← voltar</button>' +
+      '<div class="pin-box">' +
+        '<h2>Área de ' + (S.alvoPin === 'gestao' ? 'Gestão' : 'Balcão') + '</h2>' +
+        '<p>Digite o PIN do órgão para continuar.</p>' +
+        '<div class="field"><label>PIN</label><input type="password" id="pin-input" autocomplete="off"></div>' +
+        '<div class="checkbox-row"><input type="checkbox" id="pin-lembrar"' + (S.lembrarPin ? ' checked' : '') + '>' +
+        '<label for="pin-lembrar">Lembrar neste aparelho <span style="color:var(--ink-soft);">(só no celular do balcão ou no seu)</span></label></div>' +
+        (S.pinErro ? '<div class="error-msg">' + esc(S.pinErro) + '</div>' : '') +
+        '<button class="btn" id="pin-entrar" style="margin-top:8px;"' + (S.carregando ? ' disabled' : '') + '>' +
+        (S.carregando ? 'Verificando…' : 'Entrar') + '</button>' +
+      '</div>' +
+    '</div>'
+  );
+  w.querySelector('#voltar').onclick = irHome;
+  var input = w.querySelector('#pin-input');
+  w.querySelector('#pin-lembrar').onchange = function (e) { S.lembrarPin = e.target.checked; };
+  w.querySelector('#pin-entrar').onclick = function () { tentarPin(input.value); };
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') tentarPin(input.value); });
+  setTimeout(function () { input.focus(); }, 40);
+  return w;
+}
+
+function cabecalho(titulo, sub) {
+  var comAtualizar = S.tela === 'gestao' || S.tela === 'balcao';
+  var w = el(
+    '<div class="topbar"><div><h1>' + esc(titulo) + '</h1>' +
+    '<span class="area-label">' + esc(sub) + '</span></div>' +
+    '<div class="topbar-acoes">' +
+    (comAtualizar ? '<button class="voltar" id="atualizar">atualizar</button>' : '') +
+    '<button class="voltar" id="voltar">início</button></div></div>'
+  );
+  w.querySelector('#voltar').onclick = irHome;
+  if (comAtualizar) w.querySelector('#atualizar').onclick = function () { S.msg = null; S.erro = null; carregarPainel(); };
+  return w;
+}
+
+/** Faixa que mostra quem está operando, presente em toda área restrita. */
+function faixaOperador() {
+  var w = el(
+    '<div class="operador-bar"><span>operando como <b>' + esc(S.operador) + '</b></span>' +
+    '<span><button id="trocar-op">trocar</button> · <button id="sair-op">sair</button></span></div>'
+  );
+  w.querySelector('#trocar-op').onclick = function () { irOperador(S.tela); };
+  w.querySelector('#sair-op').onclick = sairDaEquipe;
+  return w;
+}
+
+/* ===== Tela: quem está operando ===== */
+function telaOperador() {
+  var w = el('<div></div>');
+  w.appendChild(cabecalho('Quem está atendendo?', 'identificação do responsável'));
+
+  if (S.operadorErro) w.appendChild(el('<div class="alert-msg">' + esc(S.operadorErro) + '</div>'));
+  if (S.carregando || !S.equipeLista) {
+    w.appendChild(el('<div class="loading">Carregando a equipe…</div>'));
+    return w;
+  }
+
+  var ativos = S.equipeLista.ativos || [];
+
+  if (!ativos.length) {
+    if (S.alvoOperador === 'balcao') {
+      w.appendChild(el(
+        '<div class="alert-msg">Nenhum membro da equipe está cadastrado, e o responsável passou a ' +
+        'ser obrigatório em cada empréstimo.<br><br>Peça a alguém da gestão para entrar na área ' +
+        '<b>Gestão → Equipe</b> e cadastrar os membros. Depois disso o balcão volta ao normal.</div>'
+      ));
+      var volta = el('<button class="btn ghost">Voltar ao início</button>');
+      volta.onclick = irHome;
+      w.appendChild(volta);
+      return w;
+    }
+    w.appendChild(el(
+      '<div class="banner"><span>Ainda não há ninguém cadastrado na equipe. Cadastre o primeiro ' +
+      'membro para começar — pode ser você mesmo.</span></div>'
+    ));
+    w.appendChild(formNovoMembro(true));
+    return w;
+  }
+
+  w.appendChild(el(
+    '<p style="color:var(--ink-soft);font-size:0.9rem;margin:0 0 14px;">' +
+    'Seu nome fica registrado em cada empréstimo, devolução e baixa de multa que você lançar. ' +
+    'A escolha vale até você fechar o app.</p>'
+  ));
+
+  ativos.forEach(function (m) {
+    var item = el(
+      '<div class="result-item"><span class="ticket-name">' + esc(m.nome) + '</span>' +
+      (m.funcao ? '<br><span class="ticket-turma">' + esc(m.funcao) + '</span>' : '') + '</div>'
+    );
+    item.onclick = function () { escolherOperador(m.nome); };
+    w.appendChild(item);
+  });
+
+  if (S.alvoOperador === 'gestao') {
+    if (!S.formMembro) {
+      var b = el('<button class="btn ghost small" style="margin-top:12px;">Cadastrar outro membro</button>');
+      b.onclick = function () { S.formMembro = true; S.membroErro = null; render(); };
+      w.appendChild(b);
+    } else {
+      w.appendChild(formNovoMembro(true));
+    }
+  }
+
+  var voltar = el('<button class="btn ghost" style="margin-top:14px;">Voltar ao início</button>');
+  voltar.onclick = irHome;
+  w.appendChild(voltar);
+  return w;
+}
+
+function formNovoMembro(entrarComoEle) {
+  var form = el(
+    '<form class="pin-box" style="margin-top:8px;">' +
+    '<h2 style="font-size:1.05rem;">Novo membro da equipe</h2>' +
+    '<div class="field"><label>Nome</label><input name="m_nome" required>' +
+    '<div class="hint">Use o nome pelo qual a pessoa é conhecida no órgão. É ele que vai aparecer ' +
+    'na planilha em cada lançamento.</div></div>' +
+    '<div class="field"><label>Função (opcional)</label><input name="m_funcao" placeholder="diretor, voluntário…"></div>' +
+    (S.membroErro ? '<div class="error-msg" style="margin-bottom:10px;">' + esc(S.membroErro) + '</div>' : '') +
+    '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+    (S.enviando ? 'Salvando…' : 'Cadastrar') + '</button>' +
+    '<button class="btn ghost" type="button" id="cancelar-m" style="margin-top:8px;">Cancelar</button></form>'
+  );
+  form.addEventListener('submit', function (e) { e.preventDefault(); salvarMembro(form, entrarComoEle); });
+  form.querySelector('#cancelar-m').onclick = function () {
+    S.formMembro = false; S.membroErro = null; render();
+  };
+  return form;
+}
+
+/* ===== Tela: solicitação de jaleco (pública) ===== */
+function telaSolicitar() {
+  var w = el('<div></div>');
+  w.appendChild(cabecalho('Pedir um jaleco', 'aviso para a gestão'));
+
+  if (S.solEnviada) {
+    w.appendChild(el('<div class="success-msg">' + esc(S.solEnviada) + '</div>'));
+    var volta = el('<button class="btn ghost">Voltar ao início</button>');
+    volta.onclick = irHome;
+    w.appendChild(volta);
+    w.appendChild(el(
+      '<div class="rules-note">Isto é só um aviso — o jaleco só é seu depois de retirado no balcão, ' +
+      'onde o empréstimo é registrado no seu nome.</div>'
+    ));
+    return w;
+  }
+
+  var form = el(
+    '<form id="f-sol">' +
+    '<div class="field"><label>Seu RA</label><input name="s_ra" required autocomplete="off"></div>' +
+    '<div class="field"><label>Seu nome completo</label><input name="s_nome" required autocomplete="name"></div>' +
+    '<div class="field"><label>Turma</label><input name="s_turma" required></div>' +
+    '<div class="field"><label>Telefone ou e-mail</label><input name="s_contato" required>' +
+    '<div class="hint">É por aqui que a gestão vai te responder.</div></div>' +
+    '<div class="field"><label>Observação (opcional)</label>' +
+    '<textarea name="s_obs" maxlength="300" placeholder="Ex.: preciso para o estágio de terça de manhã"></textarea></div>' +
+    (S.solErro ? '<div class="error-msg" style="margin-bottom:10px;">' + esc(S.solErro) + '</div>' : '') +
+    '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+    (S.enviando ? 'Enviando…' : 'Enviar pedido') + '</button></form>'
+  );
+  form.addEventListener('submit', function (e) { e.preventDefault(); enviarSolicitacao(form); });
+  w.appendChild(form);
+
+  w.appendChild(el(
+    '<div class="rules-note">O pedido entra numa fila que a gestão acompanha. ' +
+    'Não garante reserva: a retirada continua sendo feita no balcão, por ordem de chegada.</div>'
+  ));
+  return w;
+}
+
+/* ===== Tela: gestão ===== */
+function telaGestao() {
+  var w = el('<div></div>');
+  w.appendChild(cabecalho('Gestão', 'painel do órgão'));
+  if (S.operador) w.appendChild(faixaOperador());
+
+  if (S.erro) w.appendChild(el('<div class="alert-msg">' + esc(S.erro) + '</div>'));
+  if (S.carregando || !S.painel) {
+    w.appendChild(el('<div class="loading">Carregando dados da planilha…</div>'));
+    return w;
+  }
+
+  var r = S.painel.resumo;
+  var pendentes = r.atrasados + r.vencemHoje;
+  if (pendentes > 0) {
+    var banner = el(
+      '<div class="banner"><span><b>' + pendentes + '</b> jaleco(s) vencendo hoje ou atrasado(s).</span>' +
+      '<button class="btn small" id="ver-aviso">Ver lista de avisos</button></div>'
+    );
+    banner.querySelector('#ver-aviso').onclick = abrirAvisos;
+    w.appendChild(banner);
+  }
+  if (S.msg) w.appendChild(el('<div class="success-msg">' + esc(S.msg) + '</div>'));
+
+  w.appendChild(el(
+    '<div class="stats">' +
+    '<div class="stat-card accent"><span class="num mono">' + r.emprestados + '</span><span class="lbl">emprestados</span></div>' +
+    '<div class="stat-card rust"><span class="num mono">' + r.atrasados + '</span><span class="lbl">atrasados</span></div>' +
+    '<div class="stat-card"><span class="num mono">' + formatBRL(r.aReceber) + '</span><span class="lbl">a receber</span></div>' +
+    '</div>'
+  ));
+
+  var abas = el(
+    '<div class="mode-tabs cinco">' +
+    '<button class="' + (S.abaGestao === 'ativos' ? 'active' : '') + '" id="a-ativos">Ativos</button>' +
+    '<button class="' + (S.abaGestao === 'estoque' ? 'active' : '') + '" id="a-estoq">Estoque</button>' +
+    '<button class="' + (S.abaGestao === 'impedidos' ? 'active' : '') + '" id="a-imped">Impedidos (' + r.impedidos + ')</button>' +
+    '<button class="' + (S.abaGestao === 'pedidos' ? 'active' : '') + '" id="a-ped">Pedidos (' + (r.pedidos || 0) + ')</button>' +
+    '<button class="' + (S.abaGestao === 'equipe' ? 'active' : '') + '" id="a-eq">Equipe (' + (r.equipe || 0) + ')</button>' +
+    '</div>'
+  );
+  function trocarAba(nome) {
+    S.abaGestao = nome; S.msg = null; S.jalecoErro = null; S.membroErro = null;
+    S.formJaleco = null; S.editandoJaleco = null; S.confirmarExclusao = null;
+    S.formMembro = false; S.editandoMembro = null;
+    S.confirmarLimpeza = false; render();
+  }
+  abas.querySelector('#a-ativos').onclick = function () { trocarAba('ativos'); };
+  abas.querySelector('#a-estoq').onclick = function () { trocarAba('estoque'); };
+  abas.querySelector('#a-imped').onclick = function () { trocarAba('impedidos'); };
+  abas.querySelector('#a-ped').onclick = function () { trocarAba('pedidos'); };
+  abas.querySelector('#a-eq').onclick = function () { trocarAba('equipe'); };
+  w.appendChild(abas);
+
+  if (S.abaGestao === 'impedidos') { w.appendChild(painelImpedidos()); return w; }
+  if (S.abaGestao === 'estoque') { w.appendChild(painelEstoque()); return w; }
+  if (S.abaGestao === 'pedidos') { w.appendChild(painelPedidos()); return w; }
+  if (S.abaGestao === 'equipe') { w.appendChild(painelEquipe()); return w; }
+
+  var busca = el('<div class="search-row"><input type="text" id="g-busca" placeholder="Buscar por nome, RA, telefone ou nº do jaleco" value="' + esc(S.buscaGestao) + '"></div>');
+  busca.querySelector('#g-busca').addEventListener('input', function (e) {
+    S.buscaGestao = e.target.value;
+    preencherAtivos(w);
+  });
+  w.appendChild(busca);
+
+  w.appendChild(el('<div class="section-title">EMPRÉSTIMOS ATIVOS</div>'));
+  w.appendChild(el('<div id="lista-ativos"></div>'));
+  preencherAtivos(w);
+
+  w.appendChild(blocoHistorico());
+  return w;
+}
+
+function preencherAtivos(w) {
+  var alvo = w.querySelector('#lista-ativos');
+  alvo.innerHTML = '';
+  var b = S.buscaGestao.trim().toLowerCase();
+  var bd = digitos(S.buscaGestao);
+  var lista = S.painel.ativos.filter(function (l) {
+    if (!b) return true;
+    return l.nome.toLowerCase().indexOf(b) !== -1 ||
+           l.jaleco.toLowerCase().indexOf(b) !== -1 ||
+           String(l.ra || '').toLowerCase().indexOf(b) !== -1 ||
+           (bd && digitos(l.telefone).indexOf(bd) !== -1);
+  });
+  if (!lista.length) {
+    alvo.appendChild(el('<div class="empty-state">Nenhum empréstimo ativo encontrado.</div>'));
+    return;
+  }
+  lista.forEach(function (l) {
+    var txt = l.situacao === 'ok' ? 'em dia · ' + l.diasRestantes + ' du'
+            : l.situacao === 'hoje' ? 'vence hoje'
+            : l.diasAtraso === 0 ? 'vencido · sem multa'
+            : 'atrasado ' + l.diasAtraso + ' du';
+    alvo.appendChild(el(
+      '<div class="ticket s-' + l.situacao + '"><div class="ticket-top">' +
+      '<div><span class="ticket-name">' + esc(l.nome) + '</span><br><span class="ticket-turma">' + esc(l.turma) + '</span></div>' +
+      '<span class="chip s-' + l.situacao + '">' + txt + '</span></div>' +
+      '<div class="ticket-meta">' +
+      '<span>jaleco <span class="mono">' + esc(l.jaleco) + '</span></span>' +
+      (l.ra ? '<span>RA <span class="mono">' + esc(l.ra) + '</span></span>' : '') +
+      '<span>tel <span class="mono">' + esc(l.telefone) + '</span></span>' +
+      '<span>previsto <span class="mono">' + formatBR(l.dataPrevista) + '</span></span>' +
+      (l.situacao === 'atrasado' ? '<span>multa <span class="mono">' + formatBRL(l.multa) + '</span></span>' : '') +
+      (l.responsavel ? '<span>emprestado por <span class="mono">' + esc(l.responsavel) + '</span></span>' : '') +
+      '</div></div>'
+    ));
+  });
+}
+
+/* ===== Histórico, com o corte de visualização ===== */
+function blocoHistorico() {
+  var w = el('<div></div>');
+  var oculto = S.painel.historicoOculto || 0;
+
+  var det = el(
+    '<details class="hist"><summary>Ver histórico de devoluções (' + S.painel.totalHistorico + ')</summary>' +
+    '<div id="hist-corpo"></div></details>'
+  );
+  var corpo = det.querySelector('#hist-corpo');
+
+  if (oculto > 0) {
+    corpo.appendChild(el(
+      '<div class="banner"><span><b>' + oculto + '</b> registro(s) anteriores a ' +
+      formatBR(S.painel.corteHistorico) + ' estão ocultos da tela. Eles continuam na planilha.</span></div>'
+    ));
+  }
+
+  if (!S.painel.historico.length) {
+    corpo.appendChild(el('<div class="empty-state">' +
+      (oculto > 0 ? 'Nenhuma devolução depois do corte.' : 'Nenhuma devolução registrada ainda.') +
+      '</div>'));
+  } else {
+    S.painel.historico.forEach(function (l) {
+      var chipCls = l.multa > 0 ? (l.multaPaga ? 'paga' : 'pendente') : 's-ok';
+      var chipTxt = l.multa > 0 ? (l.multaPaga ? 'multa paga' : 'multa pendente') : 'em dia';
+      var item = el(
+        '<div class="ticket"><div class="ticket-top">' +
+        '<div><span class="ticket-name">' + esc(l.nome) + '</span><br><span class="ticket-turma">' + esc(l.turma) + '</span></div>' +
+        '<span class="chip ' + chipCls + '">' + chipTxt + '</span></div>' +
+        '<div class="ticket-meta">' +
+        '<span>jaleco <span class="mono">' + esc(l.jaleco) + '</span></span>' +
+        (l.ra ? '<span>RA <span class="mono">' + esc(l.ra) + '</span></span>' : '') +
+        '<span>empr. <span class="mono">' + formatBR(l.dataEmprestimo) + '</span></span>' +
+        '<span>devolvido <span class="mono">' + formatBR(l.dataDevolucao) + '</span></span>' +
+        (l.multa > 0 ? '<span>multa <span class="mono">' + formatBRL(l.multa) + '</span></span>' : '') +
+        (l.responsavel ? '<span>empr. por <span class="mono">' + esc(l.responsavel) + '</span></span>' : '') +
+        (l.recebidoPor ? '<span>receb. por <span class="mono">' + esc(l.recebidoPor) + '</span></span>' : '') +
+        (l.multa > 0 && l.multaBaixadaPor ? '<span>multa baixada por <span class="mono">' + esc(l.multaBaixadaPor) + '</span></span>' : '') +
+        '</div>' +
+        (l.multa > 0 ? '<button class="btn ghost small" style="margin-top:8px;">' +
+          (l.multaPaga ? 'Marcar como pendente' : 'Marcar como paga') + '</button>' : '') +
+        '</div>'
+      );
+      if (l.multa > 0) {
+        item.querySelector('button').onclick = function () { alternarMulta(l.id); };
+      }
+      corpo.appendChild(item);
+    });
+  }
+
+  /* Botões do corte */
+  var acoes = el('<div class="acoes-linha" style="margin-top:12px;"></div>');
+
+  if (!S.confirmarLimpeza) {
+    if (S.painel.historico.length) {
+      var limpar = el('<button class="btn ghost small">Limpar histórico da tela</button>');
+      limpar.onclick = function () { S.confirmarLimpeza = true; render(); };
+      acoes.appendChild(limpar);
+    }
+  }
+  if (oculto > 0) {
+    var restaurar = el('<button class="btn ghost small"' + (S.enviando ? ' disabled' : '') + '>Mostrar tudo de novo</button>');
+    restaurar.onclick = restaurarHistorico;
+    acoes.appendChild(restaurar);
+  }
+  corpo.appendChild(acoes);
+
+  if (S.confirmarLimpeza) {
+    var box = el(
+      '<div class="confirm-box warn" style="margin-top:12px;">' +
+      '<div class="ticket-name">Limpar o histórico da tela?</div>' +
+      '<div style="font-size:0.87rem;color:var(--ink-soft);margin:8px 0 12px;">' +
+      (S.painel.historico.length === 1
+        ? 'A devolução que aparece aqui some <b>desta tela</b>. '
+        : 'As ' + S.painel.historico.length + ' devoluções que aparecem aqui somem <b>desta tela</b>. ') +
+      'Nenhuma linha é apagada: a aba <span class="mono">Emprestimos</span> da planilha continua igual, ' +
+      'e dá para trazer tudo de volta a qualquer momento.<br><br>' +
+      'Multas pendentes continuam contando no valor a receber e seguem bloqueando quem deve.</div>' +
+      '<button class="btn danger" id="c-sim"' + (S.enviando ? ' disabled' : '') + '>' +
+      (S.enviando ? 'Limpando…' : 'Sim, limpar a tela') + '</button>' +
+      '<button class="btn ghost" id="c-nao" style="margin-top:8px;">Cancelar</button></div>'
+    );
+    box.querySelector('#c-sim').onclick = limparHistorico;
+    box.querySelector('#c-nao').onclick = function () { S.confirmarLimpeza = false; render(); };
+    corpo.appendChild(box);
+  }
+
+  if (oculto > 0 || S.painel.historico.length) det.setAttribute('open', 'open');
+  w.appendChild(det);
+  return w;
+}
+
+/* ===== Painel: estoque ===== */
+function painelEstoque() {
+  var w = el('<div></div>');
+  var est = S.painel.estoque || { itens: [], semCadastro: [], resumo: {} };
+  var res = est.resumo || {};
+
+  if (S.jalecoErro) w.appendChild(el('<div class="alert-msg">' + esc(S.jalecoErro) + '</div>'));
+
+  if (!res.total) {
+    w.appendChild(el(
+      '<div class="banner"><span>O estoque ainda está vazio. Enquanto estiver assim, ' +
+      'o balcão continua funcionando exatamente como hoje — nenhum número é conferido.</span></div>'
+    ));
+  } else {
+    w.appendChild(el(
+      '<div class="estoque-resumo">' +
+      '<span><b>' + res.prateleira + '</b> na prateleira</span>' +
+      '<span><b>' + res.emprestados + '</b> emprestados</span>' +
+      (res.fora ? '<span><b>' + res.fora + '</b> fora de circulação</span>' : '') +
+      '<span><b>' + res.total + '</b> cadastrados</span>' +
+      '</div>'
+    ));
+  }
+
+  if (est.semCadastro && est.semCadastro.length) {
+    var av = el(
+      '<div class="banner"><span><b>' + est.semCadastro.length + '</b> jaleco(s) emprestado(s) não estão no cadastro: ' +
+      est.semCadastro.map(function (s) { return esc(s.numero); }).join(', ') +
+      '. Cadastre para que apareçam no estoque.</span></div>'
+    );
+    w.appendChild(av);
+  }
+
+  var filtros = el(
+    '<div class="filtros">' +
+    '<button data-f="todos" class="' + (S.filtroEstoque === 'todos' ? 'active' : '') + '">Todos</button>' +
+    '<button data-f="prateleira" class="' + (S.filtroEstoque === 'prateleira' ? 'active' : '') + '">Na prateleira</button>' +
+    '<button data-f="emprestado" class="' + (S.filtroEstoque === 'emprestado' ? 'active' : '') + '">Emprestados</button>' +
+    '<button data-f="fora" class="' + (S.filtroEstoque === 'fora' ? 'active' : '') + '">Fora de circulação</button>' +
+    '</div>'
+  );
+  Array.prototype.forEach.call(filtros.querySelectorAll('button'), function (b) {
+    b.onclick = function () { S.filtroEstoque = b.getAttribute('data-f'); render(); };
+  });
+  w.appendChild(filtros);
+
+  var busca = el('<div class="search-row"><input type="text" id="e-busca" placeholder="Buscar por número, tamanho ou pessoa" value="' + esc(S.buscaEstoque) + '"></div>');
+  busca.querySelector('#e-busca').addEventListener('input', function (e) {
+    S.buscaEstoque = e.target.value;
+    preencherEstoque(w);
+  });
+  w.appendChild(busca);
+
+  w.appendChild(el('<div id="lista-estoque"></div>'));
+  preencherEstoque(w);
+
+  /* Cadastro */
+  if (!S.formJaleco) {
+    var acoes = el('<div class="acoes-linha" style="margin-top:16px;"></div>');
+    var bNovo = el('<button class="btn small">Cadastrar um jaleco</button>');
+    bNovo.onclick = function () { S.formJaleco = 'novo'; S.jalecoErro = null; render(); };
+    var bLote = el('<button class="btn ghost small">Cadastrar vários de uma vez</button>');
+    bLote.onclick = function () { S.formJaleco = 'lote'; S.jalecoErro = null; render(); };
+    acoes.appendChild(bNovo); acoes.appendChild(bLote);
+    w.appendChild(acoes);
+  } else if (S.formJaleco === 'novo') {
+    var form = el(
+      '<form class="pin-box" style="margin-top:16px;">' +
+      '<h2 style="font-size:1.05rem;">Novo jaleco</h2>' +
+      '<div class="field"><label>Número / identificação</label><input name="j_numero" required>' +
+      '<div class="hint">Use exatamente o que está escrito no jaleco (ex.: 007, P-12).</div></div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label>Tamanho</label><input name="j_tamanho" placeholder="P, M, G…"></div>' +
+      '<div class="field"><label>Estado</label><input name="j_estado" placeholder="novo, bom, gasto…"></div>' +
+      '</div>' +
+      '<div class="field"><label>Situação</label><select name="j_situacao">' +
+      '<option value="circulacao">Em circulação</option>' +
+      '<option value="fora">Fora de circulação</option></select></div>' +
+      '<div class="field"><label>Observação</label><input name="j_obs" placeholder="mancha na manga, botão faltando…"></div>' +
+      '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+      (S.enviando ? 'Salvando…' : 'Salvar jaleco') + '</button>' +
+      '<button class="btn ghost" type="button" id="cancelar" style="margin-top:8px;">Cancelar</button></form>'
+    );
+    form.addEventListener('submit', function (e) { e.preventDefault(); salvarJaleco(form); });
+    form.querySelector('#cancelar').onclick = function () { S.formJaleco = null; S.jalecoErro = null; render(); };
+    w.appendChild(form);
+  } else {
+    var formL = el(
+      '<form class="pin-box" style="margin-top:16px;">' +
+      '<h2 style="font-size:1.05rem;">Cadastrar vários</h2>' +
+      '<div class="field"><label>Números</label>' +
+      '<textarea name="l_texto" placeholder="01-30"></textarea>' +
+      '<div class="hint">Aceita intervalo (<span class="mono">01-30</span>), lista separada por vírgula ' +
+      '(<span class="mono">1, 2, 5</span>) ou um por linha. Com prefixo também funciona: ' +
+      '<span class="mono">P01-P10</span>. Zeros à esquerda são mantidos.</div></div>' +
+      '<div class="field"><label>Tamanho (aplicado a todos, opcional)</label><input name="l_tamanho" placeholder="M"></div>' +
+      '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+      (S.enviando ? 'Cadastrando…' : 'Cadastrar lote') + '</button>' +
+      '<button class="btn ghost" type="button" id="cancelar-l" style="margin-top:8px;">Cancelar</button></form>'
+    );
+    formL.addEventListener('submit', function (e) { e.preventDefault(); salvarLote(formL); });
+    formL.querySelector('#cancelar-l').onclick = function () { S.formJaleco = null; S.jalecoErro = null; render(); };
+    w.appendChild(formL);
+  }
+
+  return w;
+}
+
+function preencherEstoque(w) {
+  var alvo = w.querySelector('#lista-estoque');
+  alvo.innerHTML = '';
+  var est = S.painel.estoque || { itens: [] };
+  var b = S.buscaEstoque.trim().toLowerCase();
+
+  var lista = est.itens.filter(function (j) {
+    if (S.filtroEstoque !== 'todos' && j.onde !== S.filtroEstoque) return false;
+    if (!b) return true;
+    return String(j.numero).toLowerCase().indexOf(b) !== -1 ||
+           String(j.tamanho).toLowerCase().indexOf(b) !== -1 ||
+           String(j.estado).toLowerCase().indexOf(b) !== -1 ||
+           String(j.com).toLowerCase().indexOf(b) !== -1;
+  });
+
+  if (!lista.length) {
+    alvo.appendChild(el('<div class="empty-state">' +
+      (est.itens.length ? 'Nenhum jaleco nesse filtro.' : 'Nenhum jaleco cadastrado ainda.') +
+      '</div>'));
+    return;
+  }
+
+  lista.forEach(function (j) {
+    if (S.editandoJaleco === j.numero) { alvo.appendChild(formEdicaoJaleco(j)); return; }
+
+    var rotulo = j.onde === 'prateleira' ? 'na prateleira'
+               : j.onde === 'emprestado' ? 'emprestado'
+               : 'fora de circulação';
+    var meta = '';
+    if (j.onde === 'emprestado') {
+      meta = '<span>com <span class="mono">' + esc(j.com) + '</span></span>' +
+             (j.turma ? '<span>' + esc(j.turma) + '</span>' : '') +
+             '<span>previsto <span class="mono">' + formatBR(j.dataPrevista) + '</span></span>';
+    } else {
+      meta = (j.tamanho ? '<span>tam. <span class="mono">' + esc(j.tamanho) + '</span></span>' : '') +
+             (j.estado ? '<span>estado <span class="mono">' + esc(j.estado) + '</span></span>' : '') +
+             (j.observacao ? '<span>' + esc(j.observacao) + '</span>' : '');
+    }
+
+    var card = el(
+      '<div class="ticket s-' + j.onde + '"><div class="ticket-top">' +
+      '<div><span class="jaleco-num">' + esc(j.numero) + '</span>' +
+      (j.tamanho && j.onde === 'emprestado' ? ' <span class="ticket-turma">tam. ' + esc(j.tamanho) + '</span>' : '') +
+      '</div><span class="chip s-' + j.onde + '">' + rotulo + '</span></div>' +
+      (meta ? '<div class="ticket-meta">' + meta + '</div>' : '') +
+      '<div class="acoes-linha"><button class="btn ghost small" data-a="editar">Editar</button></div>' +
+      '</div>'
+    );
+    card.querySelector('[data-a="editar"]').onclick = function () {
+      S.editandoJaleco = j.numero; S.jalecoErro = null; S.confirmarExclusao = null; render();
+    };
+    alvo.appendChild(card);
+  });
+}
+
+function formEdicaoJaleco(j) {
+  var form = el(
+    '<form class="pin-box" style="margin-bottom:10px;">' +
+    '<h2 style="font-size:1.02rem;">Jaleco ' + esc(j.numero) + '</h2>' +
+    (j.onde === 'emprestado'
+      ? '<p>Está com <b>' + esc(j.com) + '</b>, previsto para ' + formatBR(j.dataPrevista) + '.</p>'
+      : '<p>Ajuste os dados ou tire de circulação.</p>') +
+    '<div class="field"><label>Número</label><input name="e_numero" value="' + esc(j.numero) + '" required></div>' +
+    '<div class="field-row">' +
+    '<div class="field"><label>Tamanho</label><input name="e_tamanho" value="' + esc(j.tamanho) + '"></div>' +
+    '<div class="field"><label>Estado</label><input name="e_estado" value="' + esc(j.estado) + '"></div>' +
+    '</div>' +
+    '<div class="field"><label>Situação</label><select name="e_situacao">' +
+    '<option value="circulacao"' + (j.situacao !== 'fora' ? ' selected' : '') + '>Em circulação</option>' +
+    '<option value="fora"' + (j.situacao === 'fora' ? ' selected' : '') + '>Fora de circulação</option>' +
+    '</select><div class="hint">"Fora de circulação" mantém o jaleco no cadastro mas avisa o balcão ' +
+    'se alguém tentar emprestá-lo.</div></div>' +
+    '<div class="field"><label>Observação</label><input name="e_obs" value="' + esc(j.observacao) + '"></div>' +
+    (S.jalecoErro ? '<div class="error-msg" style="margin-bottom:10px;">' + esc(S.jalecoErro) + '</div>' : '') +
+    '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+    (S.enviando ? 'Salvando…' : 'Salvar alterações') + '</button>' +
+    '<div class="acoes-linha"><button class="btn ghost small" type="button" data-a="cancelar">Cancelar</button>' +
+    (j.onde !== 'emprestado' ? '<button class="btn ghost small" type="button" data-a="excluir">Excluir do cadastro</button>' : '') +
+    '</div></form>'
+  );
+  form.addEventListener('submit', function (e) { e.preventDefault(); salvarEdicaoJaleco(form, j.numero); });
+  form.querySelector('[data-a="cancelar"]').onclick = function () {
+    S.editandoJaleco = null; S.confirmarExclusao = null; S.jalecoErro = null; render();
+  };
+  var bx = form.querySelector('[data-a="excluir"]');
+  if (bx) {
+    bx.onclick = function () { S.confirmarExclusao = j.numero; render(); };
+  }
+  if (S.confirmarExclusao === j.numero) {
+    var conf = el(
+      '<div class="confirm-box warn" style="margin-top:12px;">' +
+      '<div style="font-size:0.87rem;">Excluir o jaleco ' + esc(j.numero) + ' do cadastro? ' +
+      'Os empréstimos antigos dele continuam no histórico da planilha. ' +
+      'Se o jaleco só está danificado, prefira marcá-lo como fora de circulação.</div>' +
+      '<div class="acoes-linha"><button class="btn danger small" data-a="sim">Excluir</button>' +
+      '<button class="btn ghost small" data-a="nao">Cancelar</button></div></div>'
+    );
+    conf.querySelector('[data-a="sim"]').onclick = function () { excluirJaleco(j.numero); };
+    conf.querySelector('[data-a="nao"]').onclick = function () { S.confirmarExclusao = null; render(); };
+    form.appendChild(conf);
+  }
+  return form;
+}
+
+/* ===== Painel: equipe ===== */
+function painelEquipe() {
+  var w = el('<div></div>');
+  var equipe = S.painel.equipe || [];
+  var ativos = equipe.filter(function (m) { return m.ativo; });
+  var inativos = equipe.filter(function (m) { return !m.ativo; });
+
+  if (S.membroErro) w.appendChild(el('<div class="alert-msg">' + esc(S.membroErro) + '</div>'));
+
+  if (!ativos.length) {
+    w.appendChild(el(
+      '<div class="alert-msg">Nenhum membro ativo. Enquanto estiver assim, <b>o balcão não consegue ' +
+      'registrar empréstimos</b> — o responsável é obrigatório em cada lançamento.</div>'
+    ));
+  }
+
+  function cartao(m) {
+    if (S.editandoMembro === m.id) return formEdicaoMembro(m);
+    var total = m.emprestimos + m.devolucoes + m.baixas;
+    var meta = total
+      ? '<span>' + m.emprestimos + ' empréstimo(s)</span>' +
+        '<span>' + m.devolucoes + ' devolução(ões)</span>' +
+        (m.baixas ? '<span>' + m.baixas + ' baixa(s) de multa</span>' : '')
+      : '<span>ainda sem lançamentos</span>';
+    var card = el(
+      '<div class="ticket ' + (m.ativo ? 's-ok' : 's-fora') + '"><div class="ticket-top">' +
+      '<div><span class="ticket-name">' + esc(m.nome) + '</span>' +
+      (m.funcao ? '<br><span class="ticket-turma">' + esc(m.funcao) + '</span>' : '') + '</div>' +
+      '<span class="chip ' + (m.ativo ? 's-ok' : 's-fora') + '">' + (m.ativo ? 'ativo' : 'inativo') + '</span></div>' +
+      '<div class="ticket-meta">' + meta + '</div>' +
+      '<div class="acoes-linha">' +
+      '<button class="btn ghost small" data-a="editar">Editar</button>' +
+      '<button class="btn ghost small" data-a="alternar"' + (S.enviando ? ' disabled' : '') + '>' +
+      (m.ativo ? 'Desativar' : 'Reativar') + '</button>' +
+      '</div></div>'
+    );
+    card.querySelector('[data-a="editar"]').onclick = function () {
+      S.editandoMembro = m.id; S.membroErro = null; render();
+    };
+    card.querySelector('[data-a="alternar"]').onclick = function () { alternarMembro(m.id); };
+    return card;
+  }
+
+  w.appendChild(el('<div class="section-title">NA EQUIPE</div>'));
+  if (!ativos.length) w.appendChild(el('<div class="empty-state">Ninguém cadastrado ainda.</div>'));
+  else ativos.forEach(function (m) { w.appendChild(cartao(m)); });
+
+  if (inativos.length) {
+    w.appendChild(el('<div class="section-title">SAÍRAM DA EQUIPE</div>'));
+    inativos.forEach(function (m) { w.appendChild(cartao(m)); });
+  }
+
+  if (!S.formMembro) {
+    var b = el('<button class="btn" style="margin-top:14px;">Cadastrar membro</button>');
+    b.onclick = function () { S.formMembro = true; S.membroErro = null; render(); };
+    w.appendChild(b);
+  } else {
+    w.appendChild(formNovoMembro(false));
+  }
+
+  w.appendChild(el(
+    '<div class="rules-note">Ao trocar a gestão, <b>desative</b> os antigos em vez de excluir: ' +
+    'os lançamentos que eles fizeram continuam no nome deles no histórico. Excluir só é permitido ' +
+    'para quem nunca lançou nada — o caso de nome digitado errado.<br><br>' +
+    'Lembre que o PIN é compartilhado: o nome escolhido é o que a pessoa <i>declara</i>, não uma ' +
+    'autenticação. Serve para saber a quem perguntar, não para provar autoria.</div>'
+  ));
+  return w;
+}
+
+function formEdicaoMembro(m) {
+  var form = el(
+    '<form class="pin-box" style="margin-bottom:10px;">' +
+    '<h2 style="font-size:1.02rem;">Editar ' + esc(m.nome) + '</h2>' +
+    '<div class="field"><label>Nome</label><input name="me_nome" value="' + esc(m.nome) + '" required></div>' +
+    '<div class="field"><label>Função</label><input name="me_funcao" value="' + esc(m.funcao) + '"></div>' +
+    (m.emprestimos + m.devolucoes + m.baixas > 0
+      ? '<div class="hint" style="margin-bottom:12px;">Esta pessoa já tem lançamentos registrados. ' +
+        'Mudar o nome aqui não reescreve o histórico: os lançamentos antigos continuam com a grafia atual.</div>'
+      : '') +
+    (S.membroErro ? '<div class="error-msg" style="margin-bottom:10px;">' + esc(S.membroErro) + '</div>' : '') +
+    '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+    (S.enviando ? 'Salvando…' : 'Salvar') + '</button>' +
+    '<div class="acoes-linha"><button class="btn ghost small" type="button" data-a="cancelar">Cancelar</button>' +
+    (m.emprestimos + m.devolucoes + m.baixas === 0
+      ? '<button class="btn ghost small" type="button" data-a="excluir">Excluir</button>' : '') +
+    '</div></form>'
+  );
+  form.addEventListener('submit', function (e) { e.preventDefault(); salvarEdicaoMembro(form, m.id); });
+  form.querySelector('[data-a="cancelar"]').onclick = function () {
+    S.editandoMembro = null; S.membroErro = null; render();
+  };
+  var bx = form.querySelector('[data-a="excluir"]');
+  if (bx) bx.onclick = function () { removerMembro(m.id); };
+  return form;
+}
+
+/* ===== Painel: pedidos ===== */
+function painelPedidos() {
+  var w = el('<div></div>');
+  var lista = S.painel.solicitacoes || [];
+
+  w.appendChild(el('<div class="section-title">PEDIDOS AGUARDANDO</div>'));
+  if (!lista.length) {
+    w.appendChild(el('<div class="empty-state">Nenhum pedido na fila.</div>'));
+  } else {
+    lista.forEach(function (s) {
+      var card = el(
+        '<div class="ticket s-hoje"><div class="ticket-top">' +
+        '<div><span class="ticket-name">' + esc(s.nome) + '</span><br>' +
+        '<span class="ticket-turma">' + esc(s.turma) + '</span></div>' +
+        '<span class="chip s-hoje">aguardando</span></div>' +
+        '<div class="ticket-meta">' +
+        (s.ra ? '<span>RA <span class="mono">' + esc(s.ra) + '</span></span>' : '') +
+        '<span>contato <span class="mono">' + esc(s.contato) + '</span></span>' +
+        '<span>pedido em <span class="mono">' + formatDataHora(s.dataHora) + '</span></span>' +
+        (s.observacao ? '<span>' + esc(s.observacao) + '</span>' : '') +
+        '</div>' +
+        '<div class="acoes-linha">' +
+        '<button class="btn ghost small" data-a="atender">Marcar como atendido</button>' +
+        '<button class="btn ghost small" data-a="descartar">Descartar</button>' +
+        '</div></div>'
+      );
+      card.querySelector('[data-a="atender"]').onclick = function () { mudarSolicitacao(s.id, 'atendida'); };
+      card.querySelector('[data-a="descartar"]').onclick = function () { mudarSolicitacao(s.id, 'descartada'); };
+      w.appendChild(card);
+    });
+  }
+
+  w.appendChild(el(
+    '<div class="rules-note">Quando o balcão registra um empréstimo, o pedido dessa pessoa sai da fila ' +
+    'sozinho. O histórico completo dos pedidos fica na aba <span class="mono">Solicitacoes</span> da planilha.</div>'
+  ));
+  return w;
+}
+
+/* ===== Painel: impedidos ===== */
+function painelImpedidos() {
+  var w = el('<div></div>');
+  var dev = S.painel.devedores || [];
+  var blo = S.painel.bloqueios || [];
+
+  w.appendChild(el('<div class="section-title">MULTA PENDENTE — BLOQUEIO AUTOMÁTICO</div>'));
+  if (!dev.length) {
+    w.appendChild(el('<div class="empty-state">Ninguém devendo multa.</div>'));
+  } else {
+    dev.forEach(function (d) {
+      var itens = d.itens.map(function (i) {
+        return '<span>jaleco ' + esc(i.jaleco) + ' · ' + formatBR(i.dataDevolucao) + ' · ' + formatBRL(i.multa) + '</span>';
+      }).join('');
+      var card = el(
+        '<div class="ticket s-atrasado"><div class="ticket-top">' +
+        '<div><span class="ticket-name">' + esc(d.nome) + '</span><br>' +
+        '<span class="ticket-turma">' + (d.ra ? 'RA ' + esc(d.ra) + ' · ' : '') + esc(d.telefone) + '</span></div>' +
+        '<span class="chip s-atrasado">deve ' + formatBRL(d.total) + '</span></div>' +
+        '<div class="ticket-meta">' + itens + '</div>' +
+        '<div class="acoes-linha" data-alvo="btns"></div></div>'
+      );
+      var alvo = card.querySelector('[data-alvo="btns"]');
+      d.itens.forEach(function (i) {
+        var b = el('<button class="btn ghost small">Baixar ' +
+                   formatBRL(i.multa) + ' (jaleco ' + esc(i.jaleco) + ')</button>');
+        b.onclick = function () { alternarMulta(i.id); };
+        alvo.appendChild(b);
+      });
+      w.appendChild(card);
+    });
+  }
+
+  w.appendChild(el('<div class="section-title">BLOQUEIOS DA GESTÃO</div>'));
+  if (!blo.length) {
+    w.appendChild(el('<div class="empty-state">Nenhum bloqueio manual ativo.</div>'));
+  } else {
+    blo.forEach(function (b) {
+      var card = el(
+        '<div class="ticket s-atrasado"><div class="ticket-top">' +
+        '<div><span class="ticket-name">' + esc(b.nome) + '</span><br>' +
+        '<span class="ticket-turma">' + (b.ra ? 'RA ' + esc(b.ra) + (b.telefone || b.email ? ' · ' : '') : '') +
+        esc(b.telefone || b.email) + '</span></div>' +
+        '<span class="chip s-atrasado">bloqueado</span></div>' +
+        '<div class="ticket-meta"><span>' + esc(b.motivo) + '</span>' +
+        '<span>desde <span class="mono">' + formatBR(b.dataBloqueio) + '</span></span></div>' +
+        '<button class="btn ghost small" style="margin-top:8px;">Liberar</button></div>'
+      );
+      card.querySelector('button').onclick = function () { liberar(b.id); };
+      w.appendChild(card);
+    });
+  }
+
+  if (!S.formBloqueio) {
+    var abrir = el('<button class="btn" style="margin-top:14px;">Bloquear alguém manualmente</button>');
+    abrir.onclick = function () { S.formBloqueio = true; S.bloqueioErro = null; render(); };
+    w.appendChild(abrir);
+  } else {
+    var form = el(
+      '<form class="pin-box" style="margin-top:14px;" id="f-bloq">' +
+      '<h2 style="font-size:1.05rem;">Novo bloqueio</h2>' +
+      '<p>Use para casos que não são multa: dano ao jaleco, reincidência, empréstimo para terceiros.</p>' +
+      '<div class="field"><label>RA</label><input name="b_ra" autocomplete="off">' +
+      '<div class="hint">É por ele que o sistema reconhece a pessoa no balcão.</div></div>' +
+      '<div class="field"><label>Nome</label><input name="b_nome" required></div>' +
+      '<div class="field"><label>Telefone</label><input name="b_telefone" inputmode="tel"></div>' +
+      '<div class="field"><label>E-mail</label><input name="b_email" type="email">' +
+      '<div class="hint">Opcionais, mas ajudam: se a pessoa der outro RA e repetir o telefone, o bloqueio pega igual.</div></div>' +
+      '<div class="field"><label>Motivo</label><input name="b_motivo" required></div>' +
+      (S.bloqueioErro ? '<div class="error-msg">' + esc(S.bloqueioErro) + '</div>' : '') +
+      '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+      (S.enviando ? 'Salvando…' : 'Salvar bloqueio') + '</button>' +
+      '<button class="btn ghost" type="button" id="cancelar-bloq" style="margin-top:8px;">Cancelar</button></form>'
+    );
+    form.addEventListener('submit', function (e) { e.preventDefault(); salvarBloqueio(form); });
+    form.querySelector('#cancelar-bloq').onclick = function () { S.formBloqueio = false; render(); };
+    w.appendChild(form);
+  }
+  return w;
+}
+
+/* ===== Tela: balcão ===== */
+/** Menu com os membros ativos, já marcando quem está operando. */
+function seletorResponsavel(nomeCampo, rotulo, dica) {
+  var lista = (S.painel && S.painel.equipeAtiva) || [];
+  var opcoes = lista.map(function (n) {
+    return '<option value="' + esc(n) + '"' + (n === S.operador ? ' selected' : '') + '>' + esc(n) + '</option>';
+  }).join('');
+  return '<div class="field"><label>' + esc(rotulo) + '</label>' +
+    '<select name="' + nomeCampo + '" required>' +
+    (S.operador ? '' : '<option value="">Escolha…</option>') + opcoes + '</select>' +
+    (dica ? '<div class="hint">' + dica + '</div>' : '') + '</div>';
+}
+
+function telaBalcao() {
+  var w = el('<div></div>');
+  w.appendChild(cabecalho('Balcão', 'registrar empréstimo / devolução'));
+  if (S.operador) w.appendChild(faixaOperador());
+
+  var tabs = el(
+    '<div class="mode-tabs">' +
+    '<button class="' + (S.modoBalcao === 'emprestar' ? 'active' : '') + '" id="t-emp">Emprestar</button>' +
+    '<button class="' + (S.modoBalcao === 'devolver' ? 'active' : '') + '" id="t-dev">Devolver</button></div>'
+  );
+  tabs.querySelector('#t-emp').onclick = function () { S.modoBalcao = 'emprestar'; S.msg = null; S.erro = null; render(); };
+  tabs.querySelector('#t-dev').onclick = function () { S.modoBalcao = 'devolver'; S.msg = null; S.erro = null; render(); };
+  w.appendChild(tabs);
+
+  if (S.msg) w.appendChild(el('<div class="success-msg">' + esc(S.msg) + '</div>'));
+  if (S.erro) w.appendChild(el('<div class="alert-msg">' + esc(S.erro) + '</div>'));
+
+  if (S.carregando || !S.painel) {
+    w.appendChild(el('<div class="loading">Carregando…</div>'));
+    return w;
+  }
+
+  if (S.modoBalcao === 'emprestar') {
+    var est = S.painel.estoque || { resumo: {} };
+    if (est.resumo && est.resumo.total) {
+      w.appendChild(el(
+        '<div class="estoque-resumo"><span><b>' + est.resumo.prateleira +
+        '</b> jaleco(s) disponíveis na prateleira</span></div>'
+      ));
+    }
+
+    if (S.avisoBloqueio) {
+      var aviso = el(
+        '<div class="confirm-box warn" style="margin-bottom:16px;">' +
+        '<div class="fine-line late">Empréstimo bloqueado</div>' +
+        '<div style="white-space:pre-line;font-size:0.9rem;margin-bottom:12px;">' + esc(S.avisoBloqueio) + '</div>' +
+        '<button class="btn ghost" id="entendi">Voltar</button>' +
+        '<button class="btn ghost small" id="forcar" style="margin-top:10px;width:100%;">' +
+        'Liberar mesmo assim (exceção da gestão)</button></div>'
+      );
+      aviso.querySelector('#entendi').onclick = function () {
+        S.avisoBloqueio = null; S.dadosPendentes = null; render();
+      };
+      aviso.querySelector('#forcar').onclick = forcarEmprestimo;
+      w.appendChild(aviso);
+    }
+
+    var R = S.rascunho;
+    function v(c) { return ' value="' + esc(R[c] || '') + '"'; }
+    var disponiveis = ((S.painel.estoque && S.painel.estoque.itens) || [])
+      .filter(function (j) { return j.onde === 'prateleira'; })
+      .map(function (j) { return '<option value="' + esc(j.numero) + '">' + (j.tamanho ? 'tam. ' + esc(j.tamanho) : '') + '</option>'; })
+      .join('');
+
+    var form = el(
+      '<form id="form-emp" autocomplete="off">' +
+      seletorResponsavel('responsavel', 'Atendido por (gestão)',
+        'Fica registrado como responsável direto por este jaleco.') +
+      '<div class="field"><label>RA do aluno</label><div class="ra-row">' +
+      '<input name="ra" required' + v('ra') + ' autocapitalize="characters">' +
+      '<button class="btn ghost small" type="button" id="b-ra">' + (S.raBuscando ? 'Buscando…' : 'Buscar') + '</button></div>' +
+      '<div class="hint">Digite o RA e toque em Buscar: se o aluno já pegou jaleco antes, o resto se preenche sozinho.</div></div>' +
+      '<div id="ra-status"></div>' +
+      '<div class="field"><label>Nome do aluno</label><input name="nome" required' + v('nome') + '></div>' +
+      '<div class="field"><label>Telefone</label><input name="telefone" required inputmode="tel"' + v('telefone') + '></div>' +
+      '<div class="field"><label>E-mail</label><input name="email" type="email"' + v('email') + '>' +
+      '<div class="hint">Sem e-mail, o aluno não recebe o aviso automático de vencimento.</div></div>' +
+      '<div class="field"><label>Turma</label><input name="turma" required' + v('turma') + '></div>' +
+      '<div class="field"><label>Número do jaleco</label><input name="jaleco" required list="jalecos-livres"' + v('jaleco') + '>' +
+      (disponiveis ? '<datalist id="jalecos-livres">' + disponiveis + '</datalist>' : '') + '</div>' +
+      '<button class="btn" type="submit"' + (S.enviando ? ' disabled' : '') + '>' +
+      (S.enviando ? 'Registrando…' : 'Registrar empréstimo') + '</button>' +
+      '<button class="btn ghost small" type="button" id="limpar-form" style="margin-top:10px;width:100%;">Limpar formulário</button></form>'
+    );
+    // Guarda o que foi digitado, para nada se perder quando a tela se redesenha
+    form.addEventListener('input', function (e) {
+      if (e.target.name) S.rascunho[e.target.name] = e.target.value;
+      if (e.target.name === 'ra' && S.raInfo) { S.raInfo = null; form.querySelector('#ra-status').innerHTML = ''; }
+    });
+    form.querySelector('[name="ra"]').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); buscarRA(e.target.value); }
+    });
+    form.querySelector('[name="ra"]').addEventListener('change', function (e) { buscarRA(e.target.value); });
+    form.querySelector('#b-ra').onclick = function () { buscarRA(form.ra.value); };
+    form.querySelector('#limpar-form').onclick = function () {
+      S.rascunho = {}; S.raInfo = null; S.avisoBloqueio = null; S.msg = null; S.erro = null; render();
+    };
+    form.addEventListener('submit', function (e) { e.preventDefault(); enviarEmprestimo(form); });
+
+    var st = form.querySelector('#ra-status');
+    var info = S.raInfo;
+    if (info) {
+      if (info.erro) {
+        st.appendChild(el('<div class="ra-status warn">' + esc(info.erro) + '</div>'));
+      } else if (info.bloqueado || (info.jalecosEmMaos && info.jalecosEmMaos.length)) {
+        var linhas = (info.motivos || []).slice();
+        (info.jalecosEmMaos || []).forEach(function (j) {
+          linhas.push('Já está com o jaleco ' + j.jaleco + ' (previsto para ' + formatBR(j.dataPrevista) + ').');
+        });
+        st.appendChild(el('<div class="ra-status warn" style="white-space:pre-line;"><b>Atenção:</b> ' +
+          esc(linhas.join('\n')) + '</div>'));
+      } else if (info.encontrado) {
+        st.appendChild(el('<div class="ra-status ok">Aluno reconhecido (' + info.emprestimosAnteriores +
+          ' empréstimo(s) anterior(es)) · sem pendências. Confira os dados abaixo.</div>'));
+      } else {
+        st.appendChild(el('<div class="ra-status novo">Primeiro empréstimo deste RA · sem pendências. Preencha os dados.</div>'));
+      }
+    }
+    w.appendChild(form);
+  } else {
+    var busca = el('<div><div class="search-row"><input type="text" id="d-busca" placeholder="Número do jaleco, RA, nome ou telefone" value="' + esc(S.buscaDevolver) + '"></div>' +
+      '<div class="hint" style="margin:-6px 0 14px;font-size:0.78rem;color:var(--ink-soft);">' +
+      'Se quem trouxe não é o dono, busque pelo número que está no jaleco.</div></div>');
+    busca.querySelector('#d-busca').addEventListener('input', function (e) {
+      S.buscaDevolver = e.target.value; S.selecionadoId = null; render();
+      var campo = document.getElementById('d-busca');
+      if (campo) { campo.focus(); campo.setSelectionRange(campo.value.length, campo.value.length); }
+    });
+    w.appendChild(busca);
+
+    if (!S.selecionadoId) {
+      var b = S.buscaDevolver.trim().toLowerCase();
+      var bd = digitos(S.buscaDevolver);
+      var lista = S.painel.ativos.filter(function (l) {
+        if (!b) return true;
+        return l.nome.toLowerCase().indexOf(b) !== -1 ||
+               l.jaleco.toLowerCase().indexOf(b) !== -1 ||
+               String(l.ra || '').toLowerCase().indexOf(b) !== -1 ||
+               (bd && digitos(l.telefone).indexOf(bd) !== -1);
+      });
+      if (!lista.length) {
+        w.appendChild(el('<div class="empty-state">Nenhum empréstimo ativo encontrado.</div>'));
+      } else {
+        lista.forEach(function (l) {
+          var item = el(
+            '<div class="result-item"><span class="ticket-name">' + esc(l.nome) + '</span> — jaleco <span class="mono">' +
+            esc(l.jaleco) + '</span><br><span class="ticket-turma">' + esc(l.turma) +
+            ' · previsto ' + formatBR(l.dataPrevista) + '</span></div>'
+          );
+          item.onclick = function () { S.selecionadoId = l.id; S.multaPagaCheck = false; render(); };
+          w.appendChild(item);
+        });
+      }
+    } else {
+      var sel = null;
+      S.painel.ativos.forEach(function (l) { if (l.id === S.selecionadoId) sel = l; });
+      if (sel) {
+        var atrasado = sel.situacao === 'atrasado' && sel.diasAtraso > 0;
+        var box = el(
+          '<div class="confirm-box">' +
+          '<div class="ticket-name">' + esc(sel.nome) + '</div>' +
+          '<div class="ticket-turma">' + esc(sel.turma) + ' · jaleco ' + esc(sel.jaleco) +
+          (sel.responsavel ? ' · emprestado por ' + esc(sel.responsavel) : '') + '</div>' +
+          (atrasado
+            ? '<div class="fine-line late">Multa: ' + formatBRL(sel.multa) + ' (' + sel.diasAtraso + ' dia(s) útil(eis) de atraso)</div>' +
+              '<div class="checkbox-row"><input type="checkbox" id="chk-multa"><label for="chk-multa">Multa recebida agora</label></div>'
+            : '<div class="fine-line zero">Sem multa a cobrar.</div>') +
+          '<div style="margin-top:12px;">' +
+          seletorResponsavel('recebidoPor', 'Recebido por (gestão)', '') +
+          '</div>' +
+          '<button class="btn" id="conf"' + (S.enviando ? ' disabled' : '') + '>' +
+          (S.enviando ? 'Registrando…' : 'Confirmar devolução') + '</button>' +
+          '<button class="btn ghost" id="canc" style="margin-top:8px;">Cancelar</button></div>'
+        );
+        if (atrasado) {
+          box.querySelector('#chk-multa').addEventListener('change', function (e) {
+            S.multaPagaCheck = e.target.checked;
+          });
+        }
+        box.querySelector('#conf').onclick = function () {
+          confirmarDevolucao(box.querySelector('[name="recebidoPor"]').value);
+        };
+        box.querySelector('#canc').onclick = function () { S.selecionadoId = null; render(); };
+        w.appendChild(box);
+      }
+    }
+  }
+  return w;
+}
+
+/* ===== Tela: aluno ===== */
+function telaAluno() {
+  var w = el('<div></div>');
+  w.appendChild(cabecalho('Meu empréstimo', 'consulta do aluno'));
+
+  var seg = el('<div class="seg"><button type="button" data-t="ra" class="' + (S.alunoTipo === 'ra' ? 'active' : '') + '">Pelo RA</button>' +
+    '<button type="button" data-t="telefone" class="' + (S.alunoTipo === 'telefone' ? 'active' : '') + '">Pelo telefone</button></div>');
+  Array.prototype.forEach.call(seg.querySelectorAll('button'), function (b) {
+    b.onclick = function () {
+      S.alunoTipo = b.getAttribute('data-t'); S.buscaAluno = ''; S.resultadoAluno = undefined;
+      S.pendenciaAluno = null; S.erro = null; render();
+    };
+  });
+  w.appendChild(seg);
+  var porRA = S.alunoTipo === 'ra';
+  var form = el(
+    '<form id="f-aluno" style="display:flex;gap:8px;margin-bottom:16px;">' +
+    '<input type="text" id="tel" placeholder="' + (porRA ? 'Seu RA' : 'Seu telefone com DDD') + '"' +
+    ' inputmode="' + (porRA ? 'text' : 'tel') + '" value="' + esc(S.buscaAluno) +
+    '" style="flex:1;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;">' +
+    '<button class="btn small" type="submit">Buscar</button></form>'
+  );
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    S.buscaAluno = form.querySelector('#tel').value;
+    buscarAluno(S.buscaAluno);
+  });
+  w.appendChild(form);
+
+  if (S.erro) w.appendChild(el('<div class="alert-msg">' + esc(S.erro) + '</div>'));
+  if (S.carregando) w.appendChild(el('<div class="loading">Consultando…</div>'));
+
+  if (!S.carregando && S.pendenciaAluno && S.pendenciaAluno.bloqueado) {
+    w.appendChild(el(
+      '<div class="alert-msg" style="white-space:pre-line;">' +
+      '<b>Você está impedido de retirar jaleco.</b>\n' +
+      esc(S.pendenciaAluno.motivos.join('\n')) +
+      '\nProcure o balcão para regularizar.</div>'
+    ));
+  }
+
+  if (!S.carregando && S.resultadoAluno !== undefined) {
+    if (!S.resultadoAluno.length) {
+      w.appendChild(el('<div class="empty-state">Nenhum empréstimo ativo encontrado para ' +
+        (S.alunoTipo === 'ra' ? 'esse RA' : 'esse telefone') + '.</div>'));
+    } else {
+      S.resultadoAluno.forEach(function (l) {
+        var txt = l.situacao === 'ok' ? 'em dia · ' + l.diasRestantes + ' dia(s) útil(eis)'
+                : l.situacao === 'hoje' ? 'vence hoje'
+                : l.diasAtraso === 0 ? 'prazo vencido · sem multa ainda'
+                : 'atrasado ' + l.diasAtraso + ' dia(s) útil(eis)';
+        w.appendChild(el(
+          '<div class="ticket s-' + l.situacao + '"><div class="ticket-top">' +
+          '<span class="ticket-name">Jaleco ' + esc(l.jaleco) + '</span>' +
+          '<span class="chip s-' + l.situacao + '">' + txt + '</span></div>' +
+          '<div class="ticket-meta">' +
+          '<span>emprestado em <span class="mono">' + formatBR(l.dataEmprestimo) + '</span></span>' +
+          '<span>devolução prevista <span class="mono">' + formatBR(l.dataPrevista) + '</span></span>' +
+          (l.situacao === 'atrasado' ? '<span>multa atual <span class="mono">' + formatBRL(l.multa) + '</span></span>' : '') +
+          '</div></div>'
+        ));
+      });
+    }
+  }
+
+  w.appendChild(el(
+    '<div class="rules-note">Prazo de <b>' + S.regras.diasUteis +
+    ' dias úteis</b>, contando o dia da retirada. Após o prazo, multa de <b>' +
+    formatBRL(S.regras.multaPorDia) + ' por dia útil</b>. Devolva o jaleco assim que possível para evitar cobrança.</div>'
+  ));
+  return w;
+}
+
+function modalAvisos() {
+  var b = el(
+    '<div class="modal-backdrop"><div class="modal"><h3>Lista de avisos</h3>' +
+    '<textarea id="aviso-texto" readonly>' + esc(S.modalTexto) + '</textarea>' +
+    (S.copiado ? '<div class="copy-ok">Copiado. Cole no WhatsApp para enviar.</div>' : '') +
+    '<div class="modal-actions">' +
+    (navigator.share ? '<button class="btn" id="compartilhar">Compartilhar</button>' : '') +
+    '<button class="btn' + (navigator.share ? ' ghost' : '') + '" id="copiar">Copiar texto</button>' +
+    '<button class="btn ghost" id="fechar">Fechar</button></div></div></div>'
+  );
+  b.querySelector('#copiar').onclick = copiarAviso;
+  var bs = b.querySelector('#compartilhar');
+  if (bs) bs.onclick = compartilharAviso;
+  b.querySelector('#fechar').onclick = function () { S.modalTexto = null; render(); };
+  return b;
+}
+
+/* ===== Início ===== */
+(function iniciar() {
+  // Regras guardadas da última vez: a tela inicial aparece na hora, mesmo com internet lenta.
+  try { var guardadas = JSON.parse(lerLocal('jalecos_regras') || 'null'); if (guardadas) S.regras = guardadas; } catch (e) {}
+  var pinSalvo = lerLocal('jalecos_pin');
+  if (pinSalvo) { S.pin = pinSalvo; S.lembrarPin = true; }
+  render();
+
+  if (API_URL) {
+    api('getRegras').then(function (r) {
+      S.regras = r; gravarLocal('jalecos_regras', JSON.stringify(r));
+      if (S.tela === 'home') render();
+    }).catch(function () {});
+    // Se o PIN salvo foi trocado pela gestão, esquece ele.
+    if (pinSalvo) {
+      api('verificarPin', pinSalvo).then(function (ok) {
+        if (!ok) { S.pin = null; S.lembrarPin = false; gravarLocal('jalecos_pin', null); if (S.tela === 'home') render(); }
+      }).catch(function () {});
+    }
+  }
+
+  window.addEventListener('online', function () { S.online = true; render(); });
+  window.addEventListener('offline', function () { S.online = false; render(); });
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); S.promptInstalar = e; if (S.tela === 'home') render();
+  });
+  window.addEventListener('appinstalled', function () { S.promptInstalar = null; render(); });
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
