@@ -7,14 +7,17 @@
  *
  * Ao publicar uma versão nova do app, aumente o número abaixo.
  */
-const VERSAO = 'jalecos-v3.0';
+const VERSAO = 'jalecos-v3.1';
 const CASCA = [
   './', './index.html', './config.js', './manifest.webmanifest',
-  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png'
+  './qrcode.js', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting()));
+  // Guarda arquivo por arquivo: se um faltar no servidor, os outros continuam valendo.
+  e.waitUntil(caches.open(VERSAO)
+    .then((c) => Promise.all(CASCA.map((u) => c.add(u).catch(() => null))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {

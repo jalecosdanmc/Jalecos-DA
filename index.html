@@ -7,8 +7,8 @@
 <meta name="description" content="Empréstimo, devolução e consulta de jalecos">
 <meta name="theme-color" content="#2A4E50">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -208,6 +208,25 @@
   .config-box{background:var(--card);border:1px solid var(--rust);border-radius:var(--radius);padding:20px;}
   .config-box code{background:var(--paper);padding:1px 5px;border-radius:4px;font-size:0.85em;}
 
+  .qr-box{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;text-align:center;}
+  .qr-box img{width:100%;max-width:260px;height:auto;image-rendering:pixelated;}
+  .qr-url{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;word-break:break-all;color:var(--accent-deep);margin:10px 0 2px;}
+  #cartaz{display:none;}
+  @media print{
+    @page{size:A4 portrait;margin:14mm;}
+    body{background:#fff;}
+    #app{display:none !important;}
+    #cartaz{display:block;color:#22303B;font-family:'IBM Plex Sans',sans-serif;text-align:center;}
+    #cartaz h1{font-family:'Fraunces',serif;font-size:34pt;margin:0 0 4mm;}
+    #cartaz .sub{font-size:15pt;margin:0 0 8mm;color:#5B6B76;}
+    #cartaz img{width:120mm;height:120mm;image-rendering:pixelated;}
+    #cartaz .url{font-family:'IBM Plex Mono',monospace;font-size:11pt;margin:3mm 0 8mm;color:#2A4E50;word-break:break-all;}
+    #cartaz .regras{display:flex;gap:6mm;text-align:left;font-size:11.5pt;line-height:1.45;}
+    #cartaz .regras div{flex:1;border:0.4mm solid #DCD5C6;border-radius:3mm;padding:4mm 5mm;}
+    #cartaz .regras b{color:#2A4E50;}
+    #cartaz .rodape{margin-top:6mm;font-size:10pt;color:#5B6B76;}
+  }
+
   @media (min-width:600px){
     .tags{flex-direction:row;}
     .tag-btn{flex:1;flex-direction:column;align-items:flex-start;clip-path:none;border-radius:var(--radius);}
@@ -273,10 +292,11 @@ var S = {
   raBuscando: false,
   alunoTipo: 'ra',         // consulta do aluno: 'ra' | 'telefone'
   lembrarPin: false,
-  promptInstalar: null     // evento beforeinstallprompt (Android/Chrome)
+  promptInstalar: null,    // evento beforeinstallprompt (Android/Chrome)
+  qrPronto: false
 };
 
-var VERSAO_APP = '3.0';
+var VERSAO_APP = '3.1';
 
 /* ===== Armazenamento local (sempre protegido: pode falhar em aba anônima) ===== */
 function lerLocal(chave) { try { return localStorage.getItem(chave); } catch (e) { return null; } }
@@ -1000,6 +1020,7 @@ function telaGestao() {
     '<button class="' + (S.abaGestao === 'impedidos' ? 'active' : '') + '" id="a-imped">Impedidos (' + r.impedidos + ')</button>' +
     '<button class="' + (S.abaGestao === 'pedidos' ? 'active' : '') + '" id="a-ped">Pedidos (' + (r.pedidos || 0) + ')</button>' +
     '<button class="' + (S.abaGestao === 'equipe' ? 'active' : '') + '" id="a-eq">Equipe (' + (r.equipe || 0) + ')</button>' +
+    '<button class="' + (S.abaGestao === 'qr' ? 'active' : '') + '" id="a-qr">QR code</button>' +
     '</div>'
   );
   function trocarAba(nome) {
@@ -1013,12 +1034,14 @@ function telaGestao() {
   abas.querySelector('#a-imped').onclick = function () { trocarAba('impedidos'); };
   abas.querySelector('#a-ped').onclick = function () { trocarAba('pedidos'); };
   abas.querySelector('#a-eq').onclick = function () { trocarAba('equipe'); };
+  abas.querySelector('#a-qr').onclick = function () { trocarAba('qr'); };
   w.appendChild(abas);
 
   if (S.abaGestao === 'impedidos') { w.appendChild(painelImpedidos()); return w; }
   if (S.abaGestao === 'estoque') { w.appendChild(painelEstoque()); return w; }
   if (S.abaGestao === 'pedidos') { w.appendChild(painelPedidos()); return w; }
   if (S.abaGestao === 'equipe') { w.appendChild(painelEquipe()); return w; }
+  if (S.abaGestao === 'qr') { w.appendChild(painelQR()); return w; }
 
   var busca = el('<div class="search-row"><input type="text" id="g-busca" placeholder="Buscar por nome, RA, telefone ou nº do jaleco" value="' + esc(S.buscaGestao) + '"></div>');
   busca.querySelector('#g-busca').addEventListener('input', function (e) {
@@ -1472,6 +1495,120 @@ function formEdicaoMembro(m) {
   var bx = form.querySelector('[data-a="excluir"]');
   if (bx) bx.onclick = function () { removerMembro(m.id); };
   return form;
+}
+
+/* ===== Painel: QR code do app e cartaz ===== */
+/** Endereço público do app, do jeito que está aberto agora (ex.: https://usuario.github.io/jalecos/). */
+function urlDoApp() {
+  return location.origin + location.pathname.replace(/index\.html$/, '');
+}
+/** A biblioteca do QR só é baixada quando alguém abre esta aba. */
+function carregarBibliotecaQR() {
+  if (window.qrcode) return Promise.resolve();
+  return new Promise(function (ok, falha) {
+    var sc = document.createElement('script');
+    sc.src = 'qrcode.js';
+    sc.onload = function () { ok(); };
+    sc.onerror = function () { falha(new Error('Não foi possível carregar o gerador de QR code.')); };
+    document.head.appendChild(sc);
+  });
+}
+/** Desenha o QR num canvas com margem branca e devolve como imagem PNG. */
+function qrComoPNG(texto, pixelsPorModulo) {
+  var q = qrcode(0, 'M');           // tamanho automático, correção de erro média (aguenta cartaz meio gasto)
+  q.addData(texto); q.make();
+  var n = q.getModuleCount(), borda = 4, px = pixelsPorModulo || 16;
+  var c = document.createElement('canvas');
+  c.width = c.height = (n + borda * 2) * px;
+  var g = c.getContext('2d');
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#000000';
+  for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) {
+    if (q.isDark(r, k)) g.fillRect((k + borda) * px, (r + borda) * px, px, px);
+  }
+  return c.toDataURL('image/png');
+}
+
+function painelQR() {
+  var w = el('<div></div>');
+  var url = urlDoApp();
+  var local = /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname) || location.protocol !== 'https:';
+
+  if (S.qrPronto === 'erro') {
+    w.appendChild(el('<div class="alert-msg">Não foi possível carregar o gerador de QR code. Confira a internet e ' +
+      'se o arquivo <span class="mono">qrcode.js</span> foi enviado ao GitHub.</div>'));
+    return w;
+  }
+  if (!S.qrPronto) {
+    w.appendChild(el('<div class="loading">Gerando o QR code…</div>'));
+    carregarBibliotecaQR().then(function () { S.qrPronto = true; render(); })
+      .catch(function () { S.qrPronto = 'erro'; render(); });
+    return w;
+  }
+
+  if (local) {
+    w.appendChild(el('<div class="alert-msg">Este QR aponta para <b>' + esc(url) + '</b>, que não é o endereço público. ' +
+      'Abra o app pelo endereço do GitHub Pages para gerar o QR certo.</div>'));
+  }
+
+  var png = qrComoPNG(url, 16);
+  var box = el(
+    '<div class="qr-box">' +
+    '<img alt="QR code do app" src="' + png + '">' +
+    '<div class="qr-url">' + esc(url) + '</div>' +
+    '<div style="font-size:0.8rem;color:var(--ink-soft);">Este QR abre o app direto, sem passar pelo Google.</div>' +
+    '</div>'
+  );
+  w.appendChild(box);
+
+  var acoes = el('<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;"></div>');
+  var bCartaz = el('<button class="btn">Imprimir cartaz para o balcão</button>');
+  bCartaz.onclick = function () { imprimirCartaz(url); };
+  var bPng = el('<a class="btn ghost" download="qrcode-jalecos.png" href="' + png + '" style="text-decoration:none;">Baixar só o QR (imagem)</a>');
+  var bCopiar = el('<button class="btn ghost">Copiar o link</button>');
+  bCopiar.onclick = function () {
+    var feito = function () { bCopiar.textContent = 'Link copiado'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(feito, function () {});
+  };
+  acoes.appendChild(bCartaz); acoes.appendChild(bPng); acoes.appendChild(bCopiar);
+  w.appendChild(acoes);
+
+  w.appendChild(el(
+    '<div class="rules-note">Troque os QR codes antigos por este. O antigo passa pelo Google antes de chegar ' +
+    'aqui, e alguns celulares barram esse desvio. Enquanto houver algum cartaz velho por aí, ele continua ' +
+    'mostrando um botão "Abrir o app".<br><br>' +
+    'No celular, o cartaz abre a tela de impressão: escolha a impressora ou "Salvar como PDF".</div>'
+  ));
+  return w;
+}
+
+/** Monta o cartaz A4 e chama a impressão. Só o cartaz sai no papel. */
+function imprimirCartaz(url) {
+  var velho = document.getElementById('cartaz');
+  if (velho) velho.parentNode.removeChild(velho);
+  var R = S.regras;
+  var c = el(
+    '<div id="cartaz">' +
+    '<h1>Empréstimo de jalecos</h1>' +
+    '<p class="sub">Aponte a câmera do celular para o código</p>' +
+    '<img alt="" src="' + qrComoPNG(url, 24) + '">' +
+    '<div class="url">' + esc(url) + '</div>' +
+    '<div class="regras">' +
+      '<div><b>Pelo app você pode</b><br>· consultar o seu empréstimo pelo RA<br>· ver o prazo e a multa atual<br>' +
+      (R.solicitacaoAtiva ? '· avisar a gestão que precisa de um jaleco' : '') + '</div>' +
+      '<div><b>Regras</b><br>· prazo de ' + R.diasUteis + ' dias úteis, contando o dia da retirada<br>' +
+      '· multa de ' + formatBRL(R.multaPorDia) + ' por dia útil de atraso<br>' +
+      '· com multa pendente, não há novo empréstimo</div>' +
+    '</div>' +
+    '<div class="rodape">' +
+    (R.solicitacaoAtiva ? 'Pedir pelo app <b>não é reserva</b>: a retirada é no balcão, por ordem de chegada. ' : '') +
+    'Traga o seu RA. · Para instalar: Android, menu ⋮ → Instalar app · iPhone (Safari), Compartilhar → Adicionar à Tela de Início.' +
+    '</div></div>'
+  );
+  document.body.appendChild(c);
+  var img = c.querySelector('img');
+  var imprimir = function () { setTimeout(function () { window.print(); }, 50); };
+  if (img.complete) imprimir(); else img.onload = imprimir;
 }
 
 /* ===== Painel: pedidos ===== */
